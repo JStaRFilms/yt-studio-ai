@@ -1,7 +1,16 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 // Per guidelines, initialize with a named apiKey parameter from process.env.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+/**
+ * Interface for the structured content package returned by the API.
+ */
+export interface ContentPackage {
+    titles: string[];
+    description: string;
+    tags: string[];
+}
 
 /**
  * Rewrites a given piece of text based on a user's instruction using the Gemini API.
@@ -77,5 +86,56 @@ export const generateCleanup = async (script: string): Promise<string> => {
     } catch (error) {
         console.error("Error cleaning up script:", error);
         throw new Error("Failed to clean up script.");
+    }
+};
+
+/**
+ * Generates a content package (titles, description, tags) for a video script.
+ * @param script - The video script content.
+ * @returns An object containing titles, description, and tags.
+ */
+export const generateContentPackage = async (script: string): Promise<ContentPackage> => {
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: `Based on the following script, generate a content package for a YouTube video.
+
+Script:
+---
+${script}
+---`,
+            config: {
+                systemInstruction: "You are a YouTube content strategist. Generate exactly 3 compelling titles, 1 concise and engaging description (including relevant hashtags), and an array of 5-8 relevant tags.",
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        titles: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING },
+                            description: "An array of exactly 3 catchy and relevant video titles."
+                        },
+                        description: {
+                            type: Type.STRING,
+                            description: "A concise and engaging video description, max 200 characters, including 3-4 hashtags at the end."
+                        },
+                        tags: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING },
+                            description: "An array of 5-8 relevant tags for discoverability."
+                        }
+                    },
+                    required: ["titles", "description", "tags"]
+                }
+            }
+        });
+
+        // The response text will be a JSON string that needs parsing.
+        const jsonText = response.text.trim();
+        return JSON.parse(jsonText) as ContentPackage;
+
+    } catch (error) {
+        console.error("Error generating content package:", error);
+        throw new Error("Failed to generate content package.");
     }
 };

@@ -28,6 +28,7 @@
 *   **Persistence:** Use IndexedDB for client-side storage of project data (scripts, titles, etc.) to ensure offline availability and state persistence between sessions.
 *   **Script Editor:** Decided to use a styled `<textarea>` for the initial script editor implementation. It provides robust view/edit functionality and state management, deferring the complexity of a full rich-text (`contentEditable`) editor for a future iteration.
 *   **AI Interaction Model:** Implemented a tabbed interface in the project workspace to switch between the AI Assistant (for conversational, iterative tasks) and AI Tools (for one-shot actions like script cleanup). This provides dedicated spaces for different types of AI interaction.
+*   **Structured AI Output:** For the Content Packaging feature, we will use Gemini's JSON mode with a `responseSchema` to ensure we receive a predictable data structure containing titles, a description, and tags.
 
 ## 4. Development Plan & Progress
 
@@ -47,6 +48,7 @@
 - [x] Implement FR-003: Add a transcript upload feature (`.txt`, `.srt`) to the `ProjectWorkspace` page for new projects. The in-project navigation is now functional.
 - [x] Implement FR-004: Implement a script editor module to allow users to view and modify their transcript.
 - [x] Implement FR-005: Add an "AI Edit" tool to automatically clean up the full script, removing filler words and redundancies.
+- [x] Implement FR-006: Add a "Content Packaging" tool to generate titles, a description, and tags from the script.
 
 **Phase 3: Polish & Refinement**
 - [ ] Conduct a full accessibility audit (A11y).
@@ -61,6 +63,7 @@
 - [x] Implement context-aware rewriting based on selected editor text.
 - [x] Integrate Gemini for image generation in the AI Assistant.
 - [x] Integrate Gemini for automated script cleanup.
+- [x] Integrate Gemini for content packaging (titles, description, tags).
 - [ ] Power the multi-step `ProcessingWorkflow` page with Gemini.
 - [ ] Power the `B-Roll Generator` page with the Gemini API.
 - [ ] Power the `Thumbnail Generator` page with the Gemini API.
