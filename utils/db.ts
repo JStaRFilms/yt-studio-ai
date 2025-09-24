@@ -1,19 +1,21 @@
 import { Content } from '@google/genai';
 
+export interface ChatMessage extends Content {
+  timestamp: number;
+  context: 'brainstorm' | 'assistant';
+}
+
 export interface Project {
   id?: number;
   title: string;
   script: string;
   createdAt: Date;
   updatedAt: Date;
-  chatHistories?: {
-    brainstorm: Content[];
-    assistant: Content[];
-  };
+  chatHistory?: ChatMessage[];
 }
 
 const DB_NAME = 'ScriptFlowDB';
-const DB_VERSION = 2; // Incremented version for schema change
+const DB_VERSION = 3; // Incremented version for schema change
 const STORE_NAME = 'projects';
 
 let db: IDBDatabase;
@@ -38,11 +40,51 @@ export const initDB = (): Promise<IDBDatabase> => {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
+      const transaction = (event.target as IDBOpenDBRequest).transaction;
+      let store: IDBObjectStore;
+
+      // Handle initial store creation.
+      // This runs when the database is first created (oldVersion is 0).
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-        store.createIndex('updatedAt', 'updatedAt', { unique: false });
+          store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      } else {
+          store = transaction!.objectStore(STORE_NAME);
       }
-      // Schema migration logic can be added here if needed for future versions.
+      
+      // Handle migration for users coming from a version older than 3.
+      if (event.oldVersion > 0 && event.oldVersion < 3) {
+          console.log(`Migrating data in '${STORE_NAME}' from v${event.oldVersion} to v${DB_VERSION}...`);
+
+          store.openCursor().onsuccess = (e) => {
+            const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+            if (cursor) {
+              const oldProject = cursor.value as any;
+              
+              // Only migrate if the old structure (`chatHistories` object) exists
+              if (oldProject.chatHistories && typeof oldProject.chatHistories === 'object') {
+                const newChatHistory: ChatMessage[] = [];
+                let timestamp = new Date(oldProject.createdAt || Date.now()).getTime();
+
+                const brainstormHistory = oldProject.chatHistories.brainstorm || [];
+                const assistantHistory = oldProject.chatHistories.assistant || [];
+
+                brainstormHistory.forEach((msg: Content) => {
+                  newChatHistory.push({ ...msg, context: 'brainstorm', timestamp: (timestamp += 1000) });
+                });
+                assistantHistory.forEach((msg: Content) => {
+                  newChatHistory.push({ ...msg, context: 'assistant', timestamp: (timestamp += 1000) });
+                });
+
+                newChatHistory.sort((a, b) => a.timestamp - b.timestamp);
+                
+                const newProject = { ...oldProject, chatHistory: newChatHistory };
+                delete newProject.chatHistories;
+                cursor.update(newProject);
+              }
+              cursor.continue();
+            }
+          };
+      }
     };
   });
 };
@@ -53,12 +95,7 @@ export const addProject = async (project: Omit<Project, 'id' | 'createdAt' | 'up
     const transaction = db.transaction(STORE_NAME, 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     const newProject: Omit<Project, 'id'> = {
-        title: project.title,
-        script: project.script,
-        chatHistories: {
-          brainstorm: project.chatHistories?.brainstorm || [],
-          assistant: [],
-        },
+        ...project,
         createdAt: new Date(),
         updatedAt: new Date(),
     };
@@ -84,7 +121,6 @@ export const getAllProjects = async (): Promise<Project[]> => {
         const request = store.getAll();
 
         request.onsuccess = () => {
-            // Sort by most recently updated
             resolve(request.result.sort((a: Project, b: Project) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
         };
         
@@ -125,16 +161,9 @@ export const updateProject = async (id: number, updates: Partial<Omit<Project, '
         getRequest.onsuccess = () => {
             const project = getRequest.result as Project | undefined;
             if (project) {
-                // Deep merge chatHistories
-                const newChatHistories = {
-                    brainstorm: updates.chatHistories?.brainstorm ?? project.chatHistories?.brainstorm ?? [],
-                    assistant: updates.chatHistories?.assistant ?? project.chatHistories?.assistant ?? [],
-                };
-
                 const updatedProject = { 
                     ...project, 
                     ...updates, 
-                    chatHistories: newChatHistories,
                     updatedAt: new Date() 
                 };
 

@@ -1,48 +1,44 @@
-import React, { useState } from 'react';
-import type { Content } from '@google/genai';
-import { ChatIcon } from './icons';
+import React from 'react';
+import { Content } from '@google/genai';
+import AIMessage from './AIMessage';
+import UserMessage from './UserMessage';
+import { parseAndSanitizeMarkdown } from '../utils/markdown';
 
 interface ChatHistoryViewerProps {
   history: Content[];
-  title: string;
+  isLoading?: boolean;
 }
 
-const ChatHistoryViewer: React.FC<ChatHistoryViewerProps> = ({ history, title }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  if (!history || history.length === 0) {
-    return null;
-  }
-
+const ChatHistoryViewer: React.FC<ChatHistoryViewerProps> = ({ history, isLoading }) => {
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-lg text-sm mb-4">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex justify-between items-center w-full p-2 text-slate-600 hover:text-slate-800"
-        aria-expanded={isOpen}
-      >
-        <span className="flex items-center font-medium">
-          <ChatIcon className="w-4 h-4 mr-2" />
-          {title}
-        </span>
-        <svg
-          className={`w-4 h-4 transform transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {isOpen && (
-        <div className="p-3 border-t border-slate-200 max-h-48 overflow-y-auto">
-          {history.map((item, index) => (
-            <div key={index} className={`mb-2 last:mb-0 p-2 rounded-md ${item.role === 'user' ? 'bg-slate-100' : 'bg-indigo-50/50'}`}>
-              <p className="font-semibold text-xs text-slate-500 capitalize">{item.role}</p>
-              <p className="text-slate-700 whitespace-pre-wrap">{item.parts.map(p => p.text).join('')}</p>
-            </div>
-          ))}
-        </div>
+    <div className="space-y-6">
+      {history.map((message, index) => {
+        const messageText = message.parts.map(part => part.text || '').join('');
+        const sanitizedHtml = parseAndSanitizeMarkdown(messageText);
+        // FIX: Use a more stable key to prevent re-rendering issues during streaming.
+        const key = `msg-${index}-${message.role}-${messageText.length}`;
+
+        if (message.role === 'user') {
+          return (
+            <UserMessage key={key}>
+              <div className="prose prose-sm prose-invert max-w-none markdown-content" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
+            </UserMessage>
+          );
+        }
+        return (
+          <AIMessage key={key}>
+            <div className="prose prose-sm max-w-none markdown-content" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
+          </AIMessage>
+        );
+      })}
+      {isLoading && (
+        <AIMessage>
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+          </div>
+        </AIMessage>
       )}
     </div>
   );

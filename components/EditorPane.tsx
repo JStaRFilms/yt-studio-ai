@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckIcon } from './icons';
+import { parseAndSanitizeMarkdown } from '../utils/markdown';
 
 interface EditorPaneProps {
   initialContent: string;
@@ -8,12 +9,16 @@ interface EditorPaneProps {
 }
 
 const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, onScriptUpdate }) => {
-  const [content, setContent] = useState(initialContent);
+  const [content, setContent] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   useEffect(() => {
-    setContent(initialContent);
+    // Un-escape newline and tab characters that might come from JSON strings
+    const unescapedContent = initialContent ? initialContent.replace(/\\n/g, '\n').replace(/\\t/g, '\t') : '';
+    setContent(unescapedContent);
     setSaveStatus('idle');
+    setIsEditing(false); // Default to view mode when content loads
   }, [initialContent]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -34,8 +39,8 @@ const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, o
     try {
       await onScriptUpdate(content);
       setSaveStatus('saved');
+      setIsEditing(false); // Switch back to view mode
       setTimeout(() => {
-        // Only revert to idle if it's still 'saved', to avoid race conditions
         setSaveStatus(prevStatus => prevStatus === 'saved' ? 'idle' : prevStatus);
       }, 2000);
     } catch (error) {
@@ -71,28 +76,45 @@ const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, o
 
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden h-full flex flex-col">
-      <div className="p-2 border-b border-slate-200 flex justify-between items-center bg-white">
+      <div className="p-2 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
         <span className="text-xs text-slate-500 px-2">{content.split(/\s+/).filter(Boolean).length} words</span>
-        <button
-          onClick={handleSave}
-          disabled={saveStatus === 'saving' || initialContent === content}
-          className={`px-3 py-1.5 text-xs font-medium rounded-md flex items-center transition-colors ${
-            saveStatus === 'saved'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed'
-          }`}
-        >
-          {saveButtonContent()}
-        </button>
+        {isEditing ? (
+          <button
+            onClick={handleSave}
+            disabled={saveStatus === 'saving' || initialContent === content}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md flex items-center transition-colors ${
+              saveStatus === 'saved'
+                ? 'bg-green-100 text-green-800'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed'
+            }`}
+          >
+            {saveButtonContent()}
+          </button>
+        ) : (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="px-3 py-1.5 text-xs font-medium rounded-md flex items-center transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200"
+          >
+            Edit
+          </button>
+        )}
       </div>
-      <textarea
-        value={content}
-        onChange={handleChange}
-        onSelect={handleSelect}
-        placeholder="Your script will appear here..."
-        className="w-full h-full flex-1 p-4 overflow-y-auto resize-none bg-slate-50 focus:outline-none leading-relaxed"
-        aria-label="Script editor"
-      />
+      {isEditing ? (
+        <textarea
+          value={content}
+          onChange={handleChange}
+          onSelect={handleSelect}
+          placeholder="Your script will appear here..."
+          className="w-full h-full flex-1 p-4 overflow-y-auto resize-none bg-slate-50 focus:outline-none leading-relaxed"
+          aria-label="Script editor"
+          autoFocus
+        />
+      ) : (
+        <div
+          className="w-full h-full flex-1 p-4 overflow-y-auto leading-relaxed markdown-content prose prose-sm max-w-none"
+          dangerouslySetInnerHTML={{ __html: parseAndSanitizeMarkdown(content) }}
+        />
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ProjectSidebar from '../components/ProjectSidebar';
 import ProjectWorkspaceHeader from '../components/ProjectWorkspaceHeader';
 import EditorPane from '../components/EditorPane';
@@ -6,8 +6,7 @@ import AIChatPane from '../components/AIChatPane';
 import AIToolsPane from '../components/AIToolsPane';
 import ProjectMobileNav from '../components/ProjectMobileNav';
 import { UploadCloudIcon, ChatIcon, AIToolsIcon } from '../components/icons';
-import { getProject, updateProject, Project } from '../utils/db';
-import { Content } from '@google/genai';
+import { getProject, updateProject, Project, ChatMessage } from '../utils/db';
 
 interface ProjectWorkspaceProps {
     projectId: number;
@@ -40,6 +39,18 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
     fetchProject();
   }, [projectId]);
 
+  const handleHistoryUpdate = async (newHistory: ChatMessage[]) => {
+      if (project) {
+          try {
+              await updateProject(project.id!, { chatHistory: newHistory });
+              setProject(prev => prev ? { ...prev, chatHistory: newHistory, updatedAt: new Date() } : null);
+          } catch (error) {
+              console.error("Failed to save chat history:", error);
+              throw error;
+          }
+      }
+  };
+
   const handleScriptUpdate = async (newScript: string) => {
     if (project) {
         try {
@@ -50,31 +61,6 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
             throw error;
         }
     }
-  };
-
-  // FIX: Property 'brainstorm' was missing when updating chatHistories. Preserving existing brainstorm history and ensuring state update is safe.
-  const handleAssistantHistoryUpdate = async (newHistory: Content[]) => {
-      if (project) {
-          try {
-              await updateProject(project.id!, { 
-                  chatHistories: { 
-                      brainstorm: project.chatHistories?.brainstorm || [],
-                      assistant: newHistory 
-                  } 
-              });
-              setProject(prev => prev ? { 
-                  ...prev, 
-                  chatHistories: { 
-                      brainstorm: prev.chatHistories?.brainstorm || [],
-                      assistant: newHistory 
-                  },
-                  updatedAt: new Date() 
-              } : null);
-          } catch (error) {
-              console.error("Failed to save assistant chat history:", error);
-              throw error;
-          }
-      }
   };
 
   const processFile = async (file: File) => {
@@ -109,8 +95,6 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
   
   const handleUploaderClick = () => fileInputRef.current?.click();
 
-  const handleTextSelection = useCallback((text: string) => setSelectedText(text), []);
-
   const TranscriptUploader = (
     <div
       onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}
@@ -132,12 +116,7 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
   return (
     <div className="flex">
       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".txt,.srt" />
-      <ProjectSidebar 
-        projectName={project.title} 
-        projectStep="Script Editing"
-        projectId={project.id!}
-        activePage="editor"
-       />
+      <ProjectSidebar projectName={project.title} projectStep="Script Editing" projectId={project.id!} activePage="editor" />
       <ProjectMobileNav />
 
       <main className="flex-1 md:ml-64 flex flex-col h-screen bg-slate-50">
@@ -151,11 +130,7 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
               </div>
               <div className="flex-1">
                 {project.script ? (
-                  <EditorPane 
-                    initialContent={project.script} 
-                    onTextSelect={handleTextSelection}
-                    onScriptUpdate={handleScriptUpdate}
-                  />
+                  <EditorPane initialContent={project.script} onTextSelect={setSelectedText} onScriptUpdate={handleScriptUpdate} />
                 ) : TranscriptUploader}
               </div>
             </div>
@@ -171,12 +146,7 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
                 </div>
                <div className="flex-1 min-h-[500px] lg:min-h-0 pt-3">
                 {activeTab === 'chat' ? (
-                  <AIChatPane 
-                    selectedText={selectedText}
-                    assistantHistory={project.chatHistories?.assistant || []}
-                    brainstormHistory={project.chatHistories?.brainstorm || []}
-                    onAssistantHistoryUpdate={handleAssistantHistoryUpdate}
-                  />
+                  <AIChatPane project={project} selectedText={selectedText} onHistoryUpdate={handleHistoryUpdate} />
                 ) : (
                   <AIToolsPane script={project.script || ''} onApplyChanges={handleScriptUpdate} />
                 )}
