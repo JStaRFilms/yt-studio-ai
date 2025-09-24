@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScriptFlow | Project Workspace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1e293b', // slate-900
+            accent: '#4f46e5',  // indigo-600
+            'editor-bg': '#f8fafc' // slate-50
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .editor-pane {
+        @apply bg-editor-bg border border-slate-200 rounded-xl overflow-hidden;
+      }
+      .ai-tools-pane {
+        @apply bg-white border border-slate-200 rounded-xl overflow-hidden;
+      }
+      .transcript-upload {
+        @apply border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:border-accent transition-colors;
+      }
+      .tool-module {
+        @apply p-4 border-b border-slate-100 last:border-b-0;
+      }
+      .tool-module:last-child {
+        @apply border-b-0;
+      }
+      .result-card {
+        @apply bg-slate-50 rounded-lg p-4 mt-3 text-sm;
+      }
+      .tag {
+        @apply bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs inline-block mr-1 mb-1;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+  <!-- Mobile Navigation -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50">
+    <div class="flex justify-around py-3 px-4">
+      <button class="flex flex-col items-center text-accent">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span class="text-xs mt-1">Editor</span>
+      </button>
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M17.325 2.675l-.707.707M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM3 12h1m1.675-9.325l.707.707M12 3a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" />
+        </svg>
+        <span class="text-xs mt-1">AI Tools</span>
+      </button>
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+        </svg>
+        <span class="text-xs mt-1">Chat</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Desktop Layout -->
+  <div class="flex">
+    <!-- Sidebar (Desktop) -->
+    <aside class="hidden md:block w-64 bg-white border-r border-slate-200 min-h-screen p-4">
+      <div class="flex items-center mb-8">
+        <div class="bg-accent w-8 h-8 rounded-lg flex items-center justify-center">
+          <span class="text-white font-bold text-sm">SF</span>
+        </div>
+        <h1 class="ml-2 text-lg font-semibold text-slate-800">ScriptFlow</h1>
+      </div>
+      
+      <div class="mb-6">
+        <a href="/dashboard" class="flex items-center px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+          Back to Dashboard
+        </a>
+      </div>
+      
+      <div class="mb-4">
+        <h2 class="px-4 text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Project</h2>
+        <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 mx-2">
+          <h3 class="font-medium text-slate-800 truncate">Tech Review Script</h3>
+          <p class="text-xs text-slate-500 mt-1">Last edited 2 hours ago</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 md:ml-64">
+      <!-- Top Bar -->
+      <header class="bg-white border-b border-slate-200">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 sm:px-6">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-800">Tech Review Script</h2>
+            <div class="mt-1 sm:mt-0 flex flex-wrap gap-2">
+              <span class="text-xs bg-slate-100 px-2 py-1 rounded-full">Transcript</span>
+              <span class="text-xs text-slate-500">Edited 2 hours ago</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-3 mt-3 sm:mt-0">
+            <button id="uploadTranscript" class="flex items-center px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 8l4-4 4 4m-4-4v16" />
+              </svg>
+              Upload Transcript
+            </button>
+            <div class="relative">
+              <input type="text" placeholder="Search script..." class="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm w-40 focus:outline-none focus:ring-1 focus:ring-accent">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-2.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Workspace Content -->
+      <div class="p-4 sm:p-6 max-w-7xl mx-auto">
+        <!-- Mobile Project Header -->
+        <div class="md:hidden mb-4">
+          <div class="bg-accent/10 border border-accent/20 rounded-lg p-3">
+            <h3 class="font-medium text-slate-800">Tech Review Script</h3>
+            <p class="text-xs text-slate-500 mt-1">Last edited 2 hours ago</p>
+          </div>
+        </div>
+
+        <!-- Two-pane layout -->
+        <div class="flex flex-col lg:flex-row gap-6">
+          <!-- Left Pane: Script Editor -->
+          <div class="lg:w-3/5 flex flex-col">
+            <div class="flex justify-between items-center mb-3">
+              <h3 class="font-medium text-slate-800">Script Editor</h3>
+              <div class="flex space-x-1">
+                <button class="p-1.5 text-slate-500 hover:bg-slate-100 rounded">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </button>
+                <button class="p-1.5 text-slate-500 hover:bg-slate-100 rounded">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Transcript Upload Area (Visible when no transcript) -->
+            <div class="transcript-upload mb-4" id="transcriptUploadArea">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto text-slate-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 8l4-4 4 4m-4-4v16" />
+              </svg>
+              <p class="text-sm text-slate-600 mb-1">Drag & drop transcript file here</p>
+              <p class="text-xs text-slate-500">Supports .txt and .srt files</p>
+            </div>
+            
+            <!-- Editor (Visible after upload) -->
+            <div class="editor-pane hidden flex-1 flex-col" id="editorPane">
+              <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+                <div class="flex space-x-1">
+                  <button class="p-1.5 text-slate-500 hover:bg-slate-100 rounded">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  <button class="p-1.5 text-slate-500 hover:bg-slate-100 rounded">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="text-xs text-slate-500">1,248 words • 12 min read</div>
+              </div>
+              
+              <div class="p-4 overflow-y-auto flex-1" style="min-height: 400px;">
+                <div class="prose max-w-none">
+                  <p class="mb-4">Today we're diving into the new iPhone 15 Pro Max. I've been testing it for two weeks now, and I have to say... it's <strong>incredible</strong>. The titanium frame makes it so much lighter than the previous model, which is a huge improvement.</p>
+                  
+                  <p class="mb-4">The camera system is where this phone really shines. The new 5x optical zoom is game-changing for mobile photography. I took some shots at the park yesterday, and the detail was <em>astonishing</em>. You can see individual leaves on trees from 50 feet away.</p>
+                  
+                  <p class="mb-4">Now let's talk about performance. The A17 Pro chip is... well, it's fast. Like, really fast. I ran some benchmarks against the 14 Pro, and the difference is noticeable even in everyday tasks. Scrolling is smoother, apps launch quicker, and multitasking is a breeze.</p>
+                  
+                  <p class="mb-4">One thing I wasn't expecting was the battery life. Apple claims 20 hours of video playback, but in real-world use, I'm getting about 15 hours with mixed usage. That's still better than most Android flagships, but not quite as good as I hoped.</p>
+                  
+                  <p class="mb-4">The USB-C port is finally here! It's about time. File transfers are much faster now, and I don't need to carry multiple cables anymore. However, the charging speed still lags behind Android competitors. You'll need the 27W adapter for full speed, which costs extra.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Pane: AI Tools -->
+          <div class="lg:w-2/5 flex flex-col">
+            <h3 class="font-medium text-slate-800 mb-3">AI Tools</h3>
+            
+            <div class="ai-tools-pane flex-1">
+              <!-- Transcript Cleanup Module -->
+              <div class="tool-module">
+                <h4 class="font-medium text-slate-800 mb-2">Transcript Cleanup</h4>
+                <p class="text-sm text-slate-600 mb-3">Remove filler words and tighten your script for better pacing</p>
+                
+                <button id="aiEditBtn" class="w-full bg-accent hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  AI Edit
+                </button>
+                
+                <div class="result-card hidden" id="cleanupResult">
+                  <div class="flex justify-between items-start mb-2">
+                    <h5 class="font-medium text-slate-800">Cleaned Script</h5>
+                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Improved readability</span>
+                  </div>
+                  <p class="text-slate-700 text-sm leading-relaxed mb-3">Today we're diving into the new iPhone 15 Pro Max. The titanium frame makes it lighter than the previous model. The camera system shines with the new 5x optical zoom. I took shots at the park; the detail was astonishing.</p>
+                  <div class="flex space-x-2">
+                    <button id="applyCleanup" class="flex-1 bg-accent hover:bg-indigo-700 text-white text-sm py-1.5 rounded">Apply Changes</button>
+                    <button id="cancelCleanup" class="flex-1 border border-slate-300 text-slate-700 text-sm py-1.5 rounded">Cancel</button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Content Packaging Module -->
+              <div class="tool-module">
+                <h4 class="font-medium text-slate-800 mb-2">Content Packaging</h4>
+                <p class="text-sm text-slate-600 mb-3">Generate compelling metadata to increase your video's visibility</p>
+                
+                <button id="generatePackageBtn" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-4 rounded-lg transition flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Generate Package
+                </button>
+                
+                <div class="result-card hidden" id="packageResult">
+                  <h5 class="font-medium text-slate-800 mb-2">Generated Metadata</h5>
+                  
+                  <div class="mb-3">
+                    <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Titles</p>
+                    <ul class="list-disc pl-5 text-sm space-y-1">
+                      <li>iPhone 15 Pro Max Review: The Titanium Revolution</li>
+                      <li>Why the iPhone 15 Pro Max Changed Everything</li>
+                      <li>iPhone 15 Pro Max: 2 Weeks of Real-World Testing</li>
+                    </ul>
+                  </div>
+                  
+                  <div class="mb-3">
+                    <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Description</p>
+                    <p class="text-sm text-slate-700">In this hands-on review, we test the iPhone 15 Pro Max for two weeks. See how the titanium frame, 5x optical zoom, and A17 Pro chip perform in real-world scenarios. Plus, battery life tests and USB-C comparison with Android.</p>
+                  </div>
+                  
+                  <div>
+                    <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Tags</p>
+                    <div>
+                      <span class="tag">iPhone 15</span>
+                      <span class="tag">Apple</span>
+                      <span class="tag">Tech Review</span>
+                      <span class="tag">Camera Test</span>
+                      <span class="tag">Mobile</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile New Project Button -->
+  <button class="md:hidden fixed bottom-20 right-6 bg-accent hover:bg-indigo-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+    </svg>
+  </button>
+
+  <script>
+    // Transcript Upload
+    document.getElementById('uploadTranscript').addEventListener('click', function() {
+      document.getElementById('transcriptUploadArea').classList.add('hidden');
+      document.getElementById('editorPane').classList.remove('hidden');
+    });
+    
+    // AI Edit Functionality
+    document.getElementById('aiEditBtn').addEventListener('click', function() {
+      const btn = this;
+      const originalText = "Today we're diving into the new iPhone 15 Pro Max. I've been testing it for two weeks now, and I have to say... it's incredible. The titanium frame makes it so much lighter than the previous model, which is a huge improvement.";
+      const cleanedText = "Today we're diving into the new iPhone 15 Pro Max. The titanium frame makes it lighter than the previous model. The camera system shines with the new 5x optical zoom.";
+      
+      // Show loading state
+      btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...';
+      btn.disabled = true;
+      
+      // Simulate AI processing
+      setTimeout(() => {
+        document.getElementById('cleanupResult').classList.remove('hidden');
+        btn.classList.add('hidden');
+      }, 1200);
+    });
+    
+    // Apply Cleanup
+    document.getElementById('applyCleanup').addEventListener('click', function() {
+      const cleanedText = "Today we're diving into the new iPhone 15 Pro Max. The titanium frame makes it lighter than the previous model. The camera system shines with the new 5x optical zoom.";
+      const editorContent = document.querySelector('.prose');
+      
+      // Update editor content
+      editorContent.innerHTML = `
+        <p class="mb-4">${cleanedText}</p>
+        <p class="mb-4">The camera system is where this phone really shines. The new 5x optical zoom is game-changing for mobile photography. I took some shots at the park yesterday, and the detail was astonishing. You can see individual leaves on trees from 50 feet away.</p>
+        <p class="mb-4">Now let's talk about performance. The A17 Pro chip is fast. I ran some benchmarks against the 14 Pro, and the difference is noticeable even in everyday tasks. Scrolling is smoother, apps launch quicker, and multitasking is a breeze.</p>
+        <p class="mb-4">One thing I wasn't expecting was the battery life. Apple claims 20 hours of video playback, but in real-world use, I'm getting about 15 hours with mixed usage. That's still better than most Android flagships.</p>
+        <p class="mb-4">The USB-C port is finally here! It's about time. File transfers are much faster now, and I don't need to carry multiple cables anymore.</p>
+      `;
+      
+      // Reset UI
+      document.getElementById('cleanupResult').classList.add('hidden');
+      document.getElementById('aiEditBtn').classList.remove('hidden');
+      document.getElementById('aiEditBtn').innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        AI Edit
+      `;
+      document.getElementById('aiEditBtn').disabled = false;
+    });
+    
+    // Cancel Cleanup
+    document.getElementById('cancelCleanup').addEventListener('click', function() {
+      document.getElementById('cleanupResult').classList.add('hidden');
+      document.getElementById('aiEditBtn').classList.remove('hidden');
+      document.getElementById('aiEditBtn').innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        AI Edit
+      `;
+      document.getElementById('aiEditBtn').disabled = false;
+    });
+    
+    // Generate Package
+    document.getElementById('generatePackageBtn').addEventListener('click', function() {
+      const btn = this;
+      
+      // Show loading state
+      btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2 text-slate-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
+      btn.disabled = true;
+      
+      // Simulate AI processing
+      setTimeout(() => {
+        document.getElementById('packageResult').classList.remove('hidden');
+        btn.classList.add('hidden');
+      }, 1500);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScriptFlow | Thumbnail Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1e293b', // slate-900
+            accent: '#4f46e5',  // indigo-600
+            'thumbnail-bg': '#f8fafc' // slate-50
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .thumbnail-card {
+        @apply bg-white border border-slate-200 rounded-xl overflow-hidden;
+      }
+      .thumbnail-preview {
+        @apply aspect-video w-full bg-slate-100 rounded-lg overflow-hidden relative;
+      }
+      .face-upload-area {
+        @apply border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:border-accent transition-colors;
+      }
+      .face-preview {
+        @apply w-20 h-20 rounded-full overflow-hidden border-2 border-white shadow-md;
+      }
+      .regenerate-btn {
+        @apply absolute bottom-3 right-3 bg-white text-slate-700 text-xs px-2.5 py-1 rounded shadow-md hover:bg-slate-50 transition;
+      }
+      .selected-thumbnail {
+        @apply ring-2 ring-accent;
+      }
+      .thumbnail-actions {
+        @apply absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+  <!-- Mobile Navigation -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50">
+    <div class="flex justify-around py-3 px-4">
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span class="text-xs mt-1">Editor</span>
+      </button>
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+        </svg>
+        <span class="text-xs mt-1">AI Tools</span>
+      </button>
+      <button class="flex flex-col items-center text-accent">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M17.325 2.675l-.707.707M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM3 12h1m1.675-9.325l.707.707M12 3a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" />
+        </svg>
+        <span class="text-xs mt-1">Thumbnails</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Desktop Layout -->
+  <div class="flex">
+    <!-- Sidebar (Desktop) -->
+    <aside class="hidden md:block w-64 bg-white border-r border-slate-200 min-h-screen p-4">
+      <div class="flex items-center mb-8">
+        <div class="bg-accent w-8 h-8 rounded-lg flex items-center justify-center">
+          <span class="text-white font-bold text-sm">SF</span>
+        </div>
+        <h1 class="ml-2 text-lg font-semibold text-slate-800">ScriptFlow</h1>
+      </div>
+      
+      <div class="mb-6">
+        <a href="/dashboard" class="flex items-center px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+          Back to Dashboard
+        </a>
+      </div>
+      
+      <div class="mb-4">
+        <h2 class="px-4 text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Project</h2>
+        <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 mx-2">
+          <h3 class="font-medium text-slate-800 truncate">Tech Review Script</h3>
+          <p class="text-xs text-slate-500 mt-1">Thumbnail generation</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 md:ml-64">
+      <!-- Top Bar -->
+      <header class="bg-white border-b border-slate-200">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 sm:px-6">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-800">Thumbnail Generator</h2>
+            <div class="mt-1 sm:mt-0 flex flex-wrap gap-2">
+              <span class="text-xs bg-accent/10 text-accent px-2 py-1 rounded-full">AI Generated</span>
+              <span class="text-xs text-slate-500">Based on "iPhone 15 Pro Max Review"</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-3 mt-4 sm:mt-0">
+            <button id="regenerateAllBtn" class="flex items-center px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008" />
+              </svg>
+              Regenerate All
+            </button>
+            <button id="backToEditorBtn" class="md:hidden flex items-center px-3 py-2 text-accent border border-accent rounded-lg text-sm hover:bg-accent/5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Editor
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Thumbnails Content -->
+      <div class="p-4 sm:p-6 max-w-7xl mx-auto">
+        <!-- Mobile Project Header -->
+        <div class="md:hidden mb-4">
+          <div class="bg-accent/10 border border-accent/20 rounded-lg p-3">
+            <h3 class="font-medium text-slate-800">Tech Review Script</h3>
+            <p class="text-xs text-slate-500 mt-1">Thumbnail generation</p>
+          </div>
+        </div>
+
+        <!-- Face Upload Section -->
+        <div class="mb-8">
+          <div class="flex flex-col md:flex-row md:items-center justify-between mb-4">
+            <div>
+              <h3 class="font-medium text-slate-800">Your Brand Identity</h3>
+              <p class="text-sm text-slate-600 mt-1">Upload your reference photo to personalize thumbnails</p>
+            </div>
+            
+            <div class="mt-3 md:mt-0">
+              <label for="faceUpload" class="cursor-pointer">
+                <span class="inline-flex items-center px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 8l4-4 4 4m-4-4v16" />
+                  </svg>
+                  Upload Photo
+                </span>
+              </label>
+              <input type="file" id="faceUpload" class="hidden" accept="image/*">
+            </div>
+          </div>
+          
+          <div class="flex flex-wrap gap-4">
+            <!-- Default face placeholder -->
+            <div class="face-upload-area" id="facePlaceholder">
+              <div class="mx-auto w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p class="text-sm text-slate-600 mb-1">Add your face for brand consistency</p>
+              <p class="text-xs text-slate-500">Recommended: Clear front-facing photo</p>
+            </div>
+            
+            <!-- Face preview (hidden by default) -->
+            <div class="hidden items-center" id="facePreviewContainer">
+              <div class="face-preview relative" id="facePreview">
+                <img src="#" alt="Your face preview" class="w-full h-full object-cover" id="faceImage">
+              </div>
+              <div class="ml-4">
+                <p class="font-medium text-slate-800">Reference Photo</p>
+                <p class="text-sm text-slate-500" id="faceFileName">profile.jpg</p>
+                <button id="removeFaceBtn" class="mt-1 text-xs text-red-600 hover:text-red-700">Remove photo</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thumbnail Selection -->
+        <div class="mb-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
+            <h3 class="font-medium text-slate-800">Generated Thumbnails</h3>
+            <div class="mt-3 sm:mt-0">
+              <span class="inline-flex items-center px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
+                3 options generated
+              </span>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Thumbnail 1 -->
+            <div class="thumbnail-card" data-thumbnail="1">
+              <div class="thumbnail-preview relative">
+                <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-700" style="clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%)">
+                  <div class="p-4 h-full flex flex-col justify-end">
+                    <h4 class="text-white font-bold text-xl mb-2 line-clamp-2">iPhone 15 Pro Max Review: The Titanium Revolution</h4>
+                    <div class="flex items-center">
+                      <div class="w-10 h-10 rounded-full bg-white mr-2"></div>
+                      <span class="text-white text-sm font-medium">TechFlow</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="thumbnail-actions">
+                  <div class="space-x-2">
+                    <button class="bg-white text-slate-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-slate-50">Select</button>
+                    <button class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-slate-200">Download</button>
+                  </div>
+                </div>
+                <div class="regenerate-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008" />
+                  </svg>
+                  Regenerate
+                </div>
+              </div>
+              <div class="p-3 border-t border-slate-100">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="text-sm font-medium text-slate-800 line-clamp-1">Titanium Revolution Thumbnail</p>
+                    <p class="text-xs text-slate-500 mt-1">1280 × 720 • 156 KB</p>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="radio" name="selectedThumbnail" value="1" class="w-4 h-4 text-accent border-slate-300 focus:ring-accent">
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Thumbnail 2 -->
+            <div class="thumbnail-card" data-thumbnail="2">
+              <div class="thumbnail-preview relative">
+                <div class="absolute inset-0 bg-gradient-to-r from-rose-500 to-pink-600">
+                  <div class="p-4 h-full flex flex-col justify-between">
+                    <div class="flex items-center">
+                      <div class="w-12 h-12 rounded-full bg-white mr-3 flex items-center justify-center">
+                        <span class="font-bold text-xl">📱</span>
+                      </div>
+                      <div>
+                        <p class="text-white text-xs">TechFlow</p>
+                        <p class="text-white font-bold text-sm">2.1M views</p>
+                      </div>
+                    </div>
+                    <h4 class="text-white font-bold text-xl mb-2 line-clamp-2">iPhone 15 Pro Max: 2 Weeks of Real-World Testing</h4>
+                  </div>
+                </div>
+                <div class="thumbnail-actions">
+                  <div class="space-x-2">
+                    <button class="bg-white text-slate-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-slate-50">Select</button>
+                    <button class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-slate-200">Download</button>
+                  </div>
+                </div>
+                <div class="regenerate-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008" />
+                  </svg>
+                  Regenerate
+                </div>
+              </div>
+              <div class="p-3 border-t border-slate-100">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="text-sm font-medium text-slate-800 line-clamp-1">Real-World Testing Thumbnail</p>
+                    <p class="text-xs text-slate-500 mt-1">1280 × 720 • 182 KB</p>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="radio" name="selectedThumbnail" value="2" class="w-4 h-4 text-accent border-slate-300 focus:ring-accent">
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Thumbnail 3 -->
+            <div class="thumbnail-card" data-thumbnail="3">
+              <div class="thumbnail-preview relative">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-600">
+                  <div class="p-4 h-full flex flex-col justify-between">
+                    <div class="flex items-center">
+                      <div class="w-10 h-10 rounded-full bg-white mr-2 flex items-center justify-center">
+                        <span class="font-bold text-lg">📱</span>
+                      </div>
+                      <span class="text-white text-sm font-medium">TechFlow</span>
+                    </div>
+                    <div>
+                      <h4 class="text-white font-bold text-xl mb-1 line-clamp-2">iPhone 15 Pro Max Camera Test</h4>
+                      <p class="text-white text-sm">5x Optical Zoom Results</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="thumbnail-actions">
+                  <div class="space-x-2">
+                    <button class="bg-white text-slate-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-slate-50">Select</button>
+                    <button class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-slate-200">Download</button>
+                  </div>
+                </div>
+                <div class="regenerate-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008" />
+                  </svg>
+                  Regenerate
+                </div>
+              </div>
+              <div class="p-3 border-t border-slate-100">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="text-sm font-medium text-slate-800 line-clamp-1">Camera Test Thumbnail</p>
+                    <p class="text-xs text-slate-500 mt-1">1280 × 720 • 142 KB</p>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="radio" name="selectedThumbnail" value="3" class="w-4 h-4 text-accent border-slate-300 focus:ring-accent">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Thumbnail Actions -->
+        <div class="border-t border-slate-200 pt-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between">
+            <div>
+              <h3 class="font-medium text-slate-800">Selected Thumbnail</h3>
+              <p class="text-sm text-slate-600 mt-1">This will be used when publishing your video</p>
+            </div>
+            <div class="mt-3 sm:mt-0 flex space-x-3">
+              <button id="downloadSelectedBtn" class="flex items-center px-4 py-2.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 8l4-4 4 4m-4-4v16" />
+                </svg>
+                Download
+              </button>
+              <button id="applyThumbnailBtn" class="flex items-center px-4 py-2.5 bg-accent hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition">
+                Apply to Project
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Apply Button -->
+  <button id="mobileApplyBtn" class="md:hidden fixed bottom-6 left-4 right-4 bg-accent hover:bg-indigo-700 text-white py-3 rounded-xl shadow-lg flex items-center justify-center font-medium transition">
+    Apply Selected Thumbnail
+  </button>
+
+  <script>
+    // Face upload functionality
+    document.getElementById('faceUpload').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        // Update preview
+        document.getElementById('faceImage').src = e.target.result;
+        document.getElementById('faceFileName').textContent = file.name;
+        
+        // Show preview container, hide placeholder
+        document.getElementById('facePreviewContainer').classList.remove('hidden');
+        document.getElementById('facePlaceholder').classList.add('hidden');
+        
+        // Simulate face detection
+        setTimeout(() => {
+          document.querySelector('[data-thumbnail="1"] .thumbnail-preview').innerHTML = `
+            <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-700" style="clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%)">
+              <div class="p-4 h-full flex flex-col justify-end">
+                <h4 class="text-white font-bold text-xl mb-2 line-clamp-2">iPhone 15 Pro Max Review: The Titanium Revolution</h4>
+                <div class="flex items-center">
+                  <div class="w-10 h-10 rounded-full overflow-hidden mr-2">
+                    <img src="${e.target.result}" alt="Your face" class="w-full h-full object-cover">
+                  </div>
+                  <span class="text-white text-sm font-medium">TechFlow</span>
+                </div>
+              </div>
+              <div class="thumbnail-actions">
+                <div class="space-x-2">
+                  <button class="bg-white text-slate-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-slate-50">Select</button>
+                  <button class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-slate-200">Download</button>
+                </div>
+              </div>
+              <div class="regenerate-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008" />
+                </svg>
+                Regenerate
+              </div>
+            </div>
+          `;
+        }, 500);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Remove face photo
+    document.getElementById('removeFaceBtn').addEventListener('click', function() {
+      document.getElementById('facePreviewContainer').classList.add('hidden');
+      document.getElementById('facePlaceholder').classList.remove('hidden');
+      
+      // Reset thumbnail to default
+      setTimeout(() => {
+        document.querySelector('[data-thumbnail="1"] .thumbnail-preview').innerHTML = `
+          <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-700" style="clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%)">
+            <div class="p-4 h-full flex flex-col justify-end">
+              <h4 class="text-white font-bold text-xl mb-2 line-clamp-2">iPhone 15 Pro Max Review: The Titanium Revolution</h4>
+              <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full bg-white mr-2"></div>
+                <span class="text-white text-sm font-medium">TechFlow</span>
+              </div>
+            </div>
+            <div class="thumbnail-actions">
+              <div class="space-x-2">
+                <button class="bg-white text-slate-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-slate-50">Select</button>
+                <button class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-slate-200">Download</button>
+              </div>
+            </div>
+            <div class="regenerate-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008" />
+              </svg>
+              Regenerate
+            </div>
+          </div>
+        `;
+      }, 300);
+    });
+    
+    // Thumbnail selection
+    document.querySelectorAll('input[name="selectedThumbnail"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        document.querySelectorAll('.thumbnail-card').forEach(card => {
+          card.classList.remove('selected-thumbnail');
+        });
+        this.closest('.thumbnail-card').classList.add('selected-thumbnail');
+      });
+    });
+    
+    // Regenerate buttons
+    document.querySelectorAll('.regenerate-btn, #regenerateAllBtn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const btnText = this.querySelector('span') || this;
+        const originalText = btnText.textContent;
+        
+        // Show loading state
+        btnText.innerHTML = '<svg class="animate-spin h-3.5 w-3.5 mr-1.5 text-current inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Regenerating...';
+        
+        // Simulate regeneration
+        setTimeout(() => {
+          btnText.textContent = originalText;
+          
+          // For "Regenerate All" specifically
+          if (this.id === 'regenerateAllBtn') {
+            alert('All thumbnails regenerated successfully!');
+          }
+        }, 1200);
+      });
+    });
+    
+    // Apply thumbnail
+    document.getElementById('applyThumbnailBtn').addEventListener('click', function() {
+      const selected = document.querySelector('input[name="selectedThumbnail"]:checked');
+      if (!selected) {
+        alert('Please select a thumbnail first');
+        return;
+      }
+      
+      const btn = this;
+      const originalText = btn.textContent;
+      
+      // Show loading
+      btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Applying...';
+      btn.disabled = true;
+      
+      // Simulate API call
+      setTimeout(() => {
+        alert('Thumbnail applied to your project successfully!');
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }, 1000);
+    });
+    
+    // Mobile apply button
+    document.getElementById('mobileApplyBtn').addEventListener('click', function() {
+      document.getElementById('applyThumbnailBtn').click();
+    });
+    
+    // Back to editor
+    document.getElementById('backToEditorBtn').addEventListener('click', function() {
+      window.history.back();
+    });
+  </script>
+</body>
+</html>

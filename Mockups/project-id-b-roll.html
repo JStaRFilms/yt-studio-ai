@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScriptFlow | B-Roll Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1e293b', // slate-900
+            accent: '#4f46e5',  // indigo-600
+            'clip-bg': '#f8fafc', // slate-50
+            'selection-bg': '#fff9db' // amber-50
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .script-pane {
+        @apply bg-white border border-slate-200 rounded-xl overflow-hidden;
+      }
+      .clip-card {
+        @apply bg-white border border-slate-200 rounded-xl overflow-hidden;
+      }
+      .clip-preview {
+        @apply aspect-video w-full bg-slate-100 rounded-lg overflow-hidden relative;
+      }
+      .script-selection {
+        @apply p-3 border-l-4 border-amber-400 bg-selection-bg;
+      }
+      .generate-form {
+        @apply bg-white border border-slate-200 rounded-xl p-4;
+      }
+      .regenerate-btn {
+        @apply absolute top-2 right-2 bg-white text-slate-700 text-xs px-2.5 py-1 rounded shadow-md hover:bg-slate-50 transition;
+      }
+      .clip-actions {
+        @apply absolute bottom-2 right-2 flex space-x-2;
+      }
+      .selected-clip {
+        @apply ring-2 ring-accent;
+      }
+      .video-timeline {
+        @apply h-1.5 bg-slate-200 rounded-full overflow-hidden cursor-pointer;
+      }
+      .timeline-progress {
+        @apply h-full bg-accent;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+  <!-- Mobile Navigation -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50">
+    <div class="flex justify-around py-3 px-4">
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span class="text-xs mt-1">Editor</span>
+      </button>
+      <button class="flex flex-col items-center text-accent">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+        </svg>
+        <span class="text-xs mt-1">B-Roll</span>
+      </button>
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M17.325 2.675l-.707.707M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM3 12h1m1.675-9.325l.707.707M12 3a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" />
+        </svg>
+        <span class="text-xs mt-1">Thumbnails</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Desktop Layout -->
+  <div class="flex">
+    <!-- Sidebar (Desktop) -->
+    <aside class="hidden md:block w-64 bg-white border-r border-slate-200 min-h-screen p-4">
+      <div class="flex items-center mb-8">
+        <div class="bg-accent w-8 h-8 rounded-lg flex items-center justify-center">
+          <span class="text-white font-bold text-sm">SF</span>
+        </div>
+        <h1 class="ml-2 text-lg font-semibold text-slate-800">ScriptFlow</h1>
+      </div>
+      
+      <div class="mb-6">
+        <a href="/dashboard" class="flex items-center px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+          Back to Dashboard
+        </a>
+      </div>
+      
+      <div class="mb-4">
+        <h2 class="px-4 text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Project</h2>
+        <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 mx-2">
+          <h3 class="font-medium text-slate-800 truncate">Tech Review Script</h3>
+          <p class="text-xs text-slate-500 mt-1">B-Roll generation</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 md:ml-64">
+      <!-- Top Bar -->
+      <header class="bg-white border-b border-slate-200">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 sm:px-6">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-800">B-Roll Generator</h2>
+            <div class="mt-1 sm:mt-0 flex flex-wrap gap-2">
+              <span class="text-xs bg-accent/10 text-accent px-2 py-1 rounded-full">AI Generated</span>
+              <span class="text-xs text-slate-500">Enhancing "iPhone 15 Pro Max Review"</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-3 mt-4 sm:mt-0">
+            <button id="regenerateAllBtn" class="flex items-center px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008" />
+              </svg>
+              Regenerate All
+            </button>
+            <button id="backToEditorBtn" class="md:hidden flex items-center px-3 py-2 text-accent border border-accent rounded-lg text-sm hover:bg-accent/5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Editor
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- B-Roll Content -->
+      <div class="p-4 sm:p-6 max-w-7xl mx-auto">
+        <!-- Mobile Project Header -->
+        <div class="md:hidden mb-4">
+          <div class="bg-accent/10 border border-accent/20 rounded-lg p-3">
+            <h3 class="font-medium text-slate-800">Tech Review Script</h3>
+            <p class="text-xs text-slate-500 mt-1">B-Roll generation</p>
+          </div>
+        </div>
+
+        <!-- Script Selection Section -->
+        <div class="mb-8">
+          <div class="flex flex-col md:flex-row md:items-center justify-between mb-4">
+            <div>
+              <h3 class="font-medium text-slate-800">Select Script Sections</h3>
+              <p class="text-sm text-slate-600 mt-1">Choose portions that need visual support</p>
+            </div>
+            <div class="mt-3 md:mt-0">
+              <span class="inline-flex items-center px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
+                2 sections selected
+              </span>
+            </div>
+          </div>
+          
+          <div class="script-pane">
+            <div class="p-4 border-b border-slate-200">
+              <div class="flex justify-between items-center">
+                <div class="flex space-x-2">
+                  <button class="p-1.5 text-slate-500 hover:bg-slate-100 rounded">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  <button class="p-1.5 text-slate-500 hover:bg-slate-100 rounded">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="text-xs text-slate-500">1,248 words • 12 min read</div>
+              </div>
+            </div>
+            
+            <div class="p-4 space-y-4">
+              <!-- Script Section 1 -->
+              <div class="script-selection" data-section="1">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <p class="text-xs text-slate-500 uppercase tracking-wider">Selected for B-Roll</p>
+                    <p class="font-medium text-slate-800">Performance section</p>
+                  </div>
+                  <button class="text-xs text-red-600 hover:text-red-700" id="removeSection1">Remove</button>
+                </div>
+                <p class="text-sm text-slate-700 line-clamp-2">Now let's talk about performance. The A17 Pro chip is... well, it's fast. Like, really fast. I ran some benchmarks against the 14 Pro, and the difference is noticeable even in everyday tasks. Scrolling is smoother, apps launch quicker, and multitasking is a breeze.</p>
+              </div>
+              
+              <!-- Script Section 2 -->
+              <div class="script-selection" data-section="2">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <p class="text-xs text-slate-500 uppercase tracking-wider">Selected for B-Roll</p>
+                    <p class="font-medium text-slate-800">Camera demonstration</p>
+                  </div>
+                  <button class="text-xs text-red-600 hover:text-red-700" id="removeSection2">Remove</button>
+                </div>
+                <p class="text-sm text-slate-700 line-clamp-2">The camera system is where this phone really shines. The new 5x optical zoom is game-changing for mobile photography. I took some shots at the park yesterday, and the detail was astonishing. You can see individual leaves on trees from 50 feet away.</p>
+              </div>
+              
+              <!-- Add more sections prompt -->
+              <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center cursor-pointer hover:border-accent transition" id="addSectionBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <p class="text-sm text-slate-600">Select more sections from your script</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- B-Roll Generation Section -->
+        <div class="mb-8">
+          <div class="flex flex-col md:flex-row md:items-center justify-between mb-4">
+            <h3 class="font-medium text-slate-800">Generated B-Roll Clips</h3>
+            <div class="mt-3 md:mt-0">
+              <span class="inline-flex items-center px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
+                4 clips generated
+              </span>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <!-- Clip 1 -->
+            <div class="clip-card" data-clip="1">
+              <div class="clip-preview relative">
+                <div class="h-full bg-gradient-to-r from-slate-800 to-slate-900 flex items-center justify-center">
+                  <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center mx-auto mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p class="text-white text-sm mt-2">Performance Visualization</p>
+                  </div>
+                </div>
+                <div class="regenerate-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008" />
+                  </svg>
+                  Regenerate
+                </div>
+                <div class="clip-actions">
+                  <button class="bg-white text-slate-700 px-2.5 py-1 rounded text-xs font-medium hover:bg-slate-50">Preview</button>
+                  <button class="bg-accent text-white px-2.5 py-1 rounded text-xs font-medium hover:bg-indigo-700">Apply</button>
+                </div>
+              </div>
+              <div class="p-3 border-t border-slate-100">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="text-sm font-medium text-slate-800 line-clamp-1">Performance Comparison</p>
+                    <p class="text-xs text-slate-500 mt-1">5s clip • 4.2MB</p>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="radio" name="selectedClip" value="1" class="w-4 h-4 text-accent border-slate-300 focus:ring-accent">
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Associated section:</p>
+                  <p class="text-xs text-slate-700 truncate">Performance section</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Clip 2 -->
+            <div class="clip-card" data-clip="2">
+              <div class="clip-preview relative">
+                <div class="h-full bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center">
+                  <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center mx-auto mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p class="text-white text-sm mt-2">Camera Zoom Demo</p>
+                  </div>
+                </div>
+                <div class="regenerate-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008" />
+                  </svg>
+                  Regenerate
+                </div>
+                <div class="clip-actions">
+                  <button class="bg-white text-slate-700 px-2.5 py-1 rounded text-xs font-medium hover:bg-slate-50">Preview</button>
+                  <button class="bg-accent text-white px-2.5 py-1 rounded text-xs font-medium hover:bg-indigo-700">Apply</button>
+                </div>
+              </div>
+              <div class="p-3 border-t border-slate-100">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="text-sm font-medium text-slate-800 line-clamp-1">5x Zoom Demonstration</p>
+                    <p class="text-xs text-slate-500 mt-1">6s clip • 5.1MB</p>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="radio" name="selectedClip" value="2" class="w-4 h-4 text-accent border-slate-300 focus:ring-accent">
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Associated section:</p>
+                  <p class="text-xs text-slate-700 truncate">Camera demonstration</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Clip 3 -->
+            <div class="clip-card" data-clip="3">
+              <div class="clip-preview relative">
+                <div class="h-full bg-gradient-to-r from-indigo-600 to-purple-700 flex items-center justify-center">
+                  <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center mx-auto mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p class="text-white text-sm mt-2">Titanium Frame Detail</p>
+                  </div>
+                </div>
+                <div class="regenerate-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008m-.008 0h-.008v-.008" />
+                  </svg>
+                  Regenerate
+                </div>
+                <div class="clip-actions">
+                  <button class="bg-white text-slate-700 px-2.5 py-1 rounded text-xs font-medium hover:bg-slate-50">Preview</button>
+                  <button class="bg-accent text-white px-2.5 py-1 rounded text-xs font-medium hover:bg-indigo-700">Apply</button>
+                </div>
+              </div>
+              <div class="p-3 border-t border-slate-100">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="text-sm font-medium text-slate-800 line-clamp-1">Titanium Frame Close-up</p>
+                    <p class="text-xs text-slate-500 mt-1">4s clip • 3.8MB</p>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="radio" name="selectedClip" value="3" class="w-4 h-4 text-accent border-slate-300 focus:ring-accent">
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Associated section:</p>
+                  <p class="text-xs text-slate-700 truncate">Introduction section</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Clip 4 -->
+            <div class="clip-card" data-clip="4">
+              <div class="clip-preview relative">
+                <div class="h-full bg-gradient-to-r from-rose-500 to-pink-600 flex items-center justify-center">
+                  <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center mx-auto mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p class="text-white text-sm mt-2">USB-C Port Comparison</p>
+                  </div>
+                </div>
+                <div class="regenerate-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0h-.008v-.008m-.008 0 h-.008v-.008m-.008 0h-.008v-.008" />
+                  </svg>
+                  Regenerate
+                </div>
+                <div class="clip-actions">
+                  <button class="bg-white text-slate-700 px-2.5 py-1 rounded text-xs font-medium hover:bg-slate-50">Preview</button>
+                  <button class="bg-accent text-white px-2.5 py-1 rounded text-xs font-medium hover:bg-indigo-700">Apply</button>
+                </div>
+              </div>
+              <div class="p-3 border-t border-slate-100">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="text-sm font-medium text-slate-800 line-clamp-1">USB-C Comparison</p>
+                    <p class="text-xs text-slate-500 mt-1">5s clip • 4.5MB</p>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="radio" name="selectedClip" value="4" class="w-4 h-4 text-accent border-slate-300 focus:ring-accent">
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Associated section:</p>
+                  <p class="text-xs text-slate-700 truncate">Conclusion section</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clip Generation Form -->
+        <div class="generate-form mb-8">
+          <div class="flex items-center mb-3">
+            <h3 class="font-medium text-slate-800">Customize B-Roll Generation</h3>
+            <span class="ml-2 inline-flex items-center px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
+              Advanced
+            </span>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="styleSelect">
+                Visual Style
+              </label>
+              <select id="styleSelect" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent">
+                <option>Realistic (default)</option>
+                <option>Cinematic</option>
+                <option>Minimalist</option>
+                <option>Animated</option>
+                <option>Documentary</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="lengthSelect">
+                Clip Length
+              </label>
+              <select id="lengthSelect" class="w-full border border-slate-3 00 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent">
+                <option>3-5 seconds (default)</option>
+                <option>5-7 seconds</option>
+                <option>7-10 seconds</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <label class="flex items-start">
+              <input type="checkbox" class="mt-1 h-4 w-4 text-accent border-slate-300 rounded focus:ring-accent">
+              <span class="ml-2 text-sm text-slate-700">
+                <span class="font-medium">Use reference footage</span>
+                <span class="block text-slate-500 mt-1">The AI will incorporate your uploaded reference videos for consistent style</span>
+              </span>
+            </label>
+          </div>
+          
+          <div class="mt-4 flex justify-end">
+            <button id="generateBtn" class="bg-accent hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition">
+              Generate B-Roll Clips
+            </button>
+          </div>
+        </div>
+
+        <!-- Selected Clip Actions -->
+        <div class="border-t border-slate-200 pt-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between">
+            <div>
+              <h3 class="font-medium text-slate-800">Selected B-Roll Clip</h3>
+              <p class="text-sm text-slate-600 mt-1">This will be added to your video timeline</p>
+            </div>
+            <div class="mt-3 sm:mt-0 flex space-x-3">
+              <button id="downloadClipBtn" class="flex items-center px-4 py-2.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 8l4-4 4 4m-4-4v16" />
+                </svg>
+                Download
+              </button>
+              <button id="applyClipBtn" class="flex items-center px-4 py-2.5 bg-accent hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition">
+                Apply to Project
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Apply Button -->
+  <button id="mobileApplyBtn" class="md:hidden fixed bottom-6 left-4 right-4 bg-accent hover:bg-indigo-700 text-white py-3 rounded-xl shadow-lg flex items-center justify-center font-medium transition">
+    Apply Selected B-Roll
+  </button>
+
+  <script>
+    // Add section button
+    document.getElementById('addSectionBtn').addEventListener('click', function() {
+      alert('In the full application, this would let you select text from your script editor to generate B-roll for.');
+    });
+    
+    // Remove section buttons
+    document.getElementById('removeSection1').addEventListener('click', function() {
+      this.closest('.script-selection').remove();
+      updateSectionCount();
+    });
+    
+    document.getElementById('removeSection2').addEventListener('click', function() {
+      this.closest('.script-selection').remove();
+      updateSectionCount();
+    });
+    
+    function updateSectionCount() {
+      const count = document.querySelectorAll('.script-selection').length;
+      document.querySelector('[data-section-count]').textContent = `${count} section${count !== 1 ? 's' : ''} selected`;
+    }
+    
+    // Clip selection
+    document.querySelectorAll('input[name="selectedClip"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        document.querySelectorAll('.clip-card').forEach(card => {
+          card.classList.remove('selected-clip');
+        });
+        this.closest('.clip-card').classList.add('selected-clip');
+      });
+    });
+    
+    // Apply clip
+    document.getElementById('applyClipBtn').addEventListener('click', function() {
+      const selected = document.querySelector('input[name="selectedClip"]:checked');
+      if (!selected) {
+        alert('Please select a B-roll clip first');
+        return;
+      }
+      
+      const btn = this;
+      const originalText = btn.textContent;
+      
+      // Show loading
+      btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Applying...';
+      btn.disabled = true;
+      
+      // Simulate API call
+      setTimeout(() => {
+        alert('B-roll clip applied to your project successfully!');
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }, 1000);
+    });
+    
+    // Regenerate buttons
+    document.querySelectorAll('.regenerate-btn, #regenerateAllBtn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const btnText = this.querySelector('span') || this;
+        const originalText = btnText.textContent;
+        
+        // Show loading state
+        btnText.innerHTML = '<svg class="animate-spin h-3.5 w-3.5 mr-1.5 text-current inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Regenerating...';
+        
+        // Simulate regeneration
+        setTimeout(() => {
+          btnText.textContent = originalText;
+          
+          // For "Regenerate All" specifically
+          if (this.id === 'regenerateAllBtn') {
+            alert('All B-roll clips regenerated successfully!');
+          }
+        }, 1200);
+      });
+    });
+    
+    // Generate button
+    document.getElementById('generateBtn').addEventListener('click', function() {
+      const style = document.getElementById('styleSelect').value;
+      const length = document.getElementById('lengthSelect').value;
+      
+      // Show loading
+      this.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
+      this.disabled = true;
+      
+      // Simulate generation
+      setTimeout(() => {
+        this.textContent = 'Generate B-Roll Clips';
+        this.disabled = false;
+        
+        // Show success
+        alert(`Generated 4 B-roll clips using ${style} style (${length})`);
+      }, 1500);
+    });
+    
+    // Mobile apply button
+    document.getElementById('mobileApplyBtn').addEventListener('click', function() {
+      document.getElementById('applyClipBtn').click();
+    });
+    
+    // Back to editor
+    document.getElementById('backToEditorBtn').addEventListener('click', function() {
+      window.history.back();
+    });
+  </script>
+</body>
+</html>

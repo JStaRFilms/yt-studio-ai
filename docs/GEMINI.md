@@ -1,0 +1,58 @@
+# Project Command & Control: ScriptFlow
+
+## 1. Instructions for My AI Partner (You)
+
+**Objective:** This document is the single source of truth for the ScriptFlow project. **Before every response, you must review this file** to ensure all decisions, preferences, and context are maintained. Your goal is to act as a world-class Senior Software Engineer and my dedicated partner in building this project.
+
+**Core Directives:**
+
+*   **Review This File First:** This is your primary instruction. Always read and comprehend this `GEMINI.md` file before generating any response or code.
+*   **Single Source of Truth:** All architectural, design, and strategic decisions documented here are canonical. Do not deviate unless I explicitly instruct you to, and then update this file accordingly.
+*   **Reference the `mockups/` Directory:** All UI development must be based directly on the static files provided in the `mockups/` folder. This is the ground truth for all visual components.
+*   **Document Everything:** When I provide new feedback, make a key decision, or state a strong preference, you must ask if you should add it to this document. Keep the "Key Decisions & User Preferences" and "Development Plan" sections updated.
+*   **Proactive Partnership:** Don't just wait for instructions. Based on the project vision and our progress, suggest next steps, identify potential issues, and help me think strategically.
+
+## 2. Project Vision & High-Level Plan
+
+*   **Vision:** An AI-powered web application to streamline the YouTube video creation workflow, from scriptwriting to final packaging.
+*   **Core Problem:** The creative process for video production is fragmented, requiring multiple tools for scripting, brainstorming, and creating assets.
+*   **Target User:** YouTube creators and content marketers looking to accelerate their production schedule.
+*   **Architecture:** A serverless web application with a React frontend.
+*   **Tech Stack:** React, TypeScript, Tailwind CSS, Gemini API.
+
+## 3. Key Decisions & User Preferences
+*(This section is a living log. We will update it with every significant decision we make.)*
+
+*   **Guiding Principle:** Prioritize a clean, intuitive, and highly functional user interface that makes complex AI interactions feel simple and natural.
+*   **Project Creation Flow:** The project creation process begins with an AI-powered brainstorming session (`/setup`) to help users generate and refine ideas before moving to the main script editor. This prioritizes ideation upfront.
+
+## 4. Development Plan & Progress
+
+**Project Status:** We are implementing the core AI features using the Gemini API.
+
+**Phase 1: Foundation & Setup**
+- [x] Create `docs/GEMINI.md` as the command & control center.
+
+**Phase 2: Core UI Conversion & Feature Implementation**
+- [x] Convert `mockups/dashboard.html` to the `Dashboard` page.
+- [x] Convert `mockups/project-id-setup.html` to the `ProjectSetup` page.
+- [x] Convert `mockups/project-id.html` to the `ProjectWorkspace` page.
+- [x] Convert `mockups/project-id-v2.html` to enhance the `ProjectWorkspace` with an AI chat assistant.
+- [x] Convert `mockups/project-id-b-roll.html`, `project-id-thumbnails.html`, and `ProcessingWorkflowpage.html`.
+- [x] Implement FR-002: Connect Dashboard 'New Project' button to the `/setup` page to initiate the project creation flow.
+
+**Phase 3: Polish & Refinement**
+- [x] Conduct a full accessibility audit (A11y).
+- [x] Optimize for performance (Lighthouse score > 90).
+
+**Phase 4: Final Steps**
+- [ ] Write comprehensive tests.
+- [ ] Deploy to production.
+
+**Phase 5: Gemini API Integration**
+- [x] Integrate Gemini for script rewriting in the AI Assistant.
+- [x] Implement context-aware rewriting based on selected editor text.
+- [x] Integrate Gemini for image generation in the AI Assistant.
+- [x] Power the multi-step `ProcessingWorkflow` page with Gemini.
+- [ ] Power the `B-Roll Generator` page with the Gemini API.
+- [ ] Power the `Thumbnail Generator` page with the Gemini API.

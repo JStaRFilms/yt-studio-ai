@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScriptFlow | Brainstorm Session</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1e293b', // slate-900
+            accent: '#4f46e5',  // indigo-600
+            'ai-bg': '#f0f4ff', // indigo-50
+            'user-bg': '#f8fafc' // slate-50
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .message {
+        @apply max-w-[85%] rounded-2xl p-3.5;
+      }
+      .ai-message {
+        @apply bg-ai-bg text-slate-800 ml-1;
+      }
+      .user-message {
+        @apply bg-user-bg text-slate-800 mr-1;
+      }
+      .chat-input {
+        @apply border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent;
+      }
+      .suggestion-pill {
+        @apply bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-sm cursor-pointer hover:bg-slate-200 transition;
+      }
+      .transition-panel {
+        @apply bg-white border border-slate-200 rounded-xl p-4 mt-4;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+  <!-- Mobile Navigation -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50">
+    <div class="flex justify-around py-3 px-4">
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span class="text-xs mt-1">Editor</span>
+      </button>
+      <button class="flex flex-col items-center text-accent">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+        </svg>
+        <span class="text-xs mt-1">Chat</span>
+      </button>
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M17.325 2.675l-.707.707M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM3 12h1m1.675-9.325l.707.707M12 3a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" />
+        </svg>
+        <span class="text-xs mt-1">AI Tools</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Desktop Layout -->
+  <div class="flex">
+    <!-- Sidebar (Desktop) -->
+    <aside class="hidden md:block w-64 bg-white border-r border-slate-200 min-h-screen p-4">
+      <div class="flex items-center mb-8">
+        <div class="bg-accent w-8 h-8 rounded-lg flex items-center justify-center">
+          <span class="text-white font-bold text-sm">SF</span>
+        </div>
+        <h1 class="ml-2 text-lg font-semibold text-slate-800">ScriptFlow</h1>
+      </div>
+      
+      <div class="mb-6">
+        <a href="/dashboard" class="flex items-center px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+          Back to Dashboard
+        </a>
+      </div>
+      
+      <div class="mb-4">
+        <h2 class="px-4 text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Project</h2>
+        <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 mx-2">
+          <h3 class="font-medium text-slate-800 truncate">New Video Idea</h3>
+          <p class="text-xs text-slate-500 mt-1">Ideation phase</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 md:ml-64">
+      <!-- Top Bar -->
+      <header class="bg-white border-b border-slate-200">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 sm:px-6">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-800">Brainstorm Session</h2>
+            <div class="mt-1 sm:mt-0 flex flex-wrap gap-2">
+              <span class="text-xs bg-accent/10 text-accent px-2 py-1 rounded-full">Ideation Phase</span>
+              <span class="text-xs text-slate-500">Session active</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-3 mt-4 sm:mt-0">
+            <button id="viewScriptBtn" class="hidden md:flex items-center px-3 py-2 text-accent border border-accent rounded-lg text-sm hover:bg-accent/5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              View Script
+            </button>
+            <button id="newSessionBtn" class="flex items-center px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              New Session
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Chat Content -->
+      <div class="max-w-3xl mx-auto h-[calc(100vh-100px)] flex flex-col">
+        <!-- Chat Header (Mobile) -->
+        <div class="md:hidden p-4 border-b border-slate-200">
+          <div class="flex items-center">
+            <div class="bg-accent w-10 h-10 rounded-lg flex items-center justify-center mr-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-medium text-slate-800">Brainstorm Assistant</h3>
+              <p class="text-xs text-slate-500">Ready to help craft your video</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chatMessages">
+          <!-- AI Welcome Message -->
+          <div class="message ai-message">
+            <p class="font-medium">Hi there! I'm your video brainstorming assistant. 👋</p>
+            <p class="mt-2 text-sm">Let's create something great together. To get started:</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <div class="suggestion-pill" data-suggestion="What video topics should I cover about sustainable fashion?">Sustainable fashion ideas</div>
+              <div class="suggestion-pill" data-suggestion="Help me outline a travel vlog for Tokyo">Tokyo travel vlog outline</div>
+              <div class="suggestion-pill" data-suggestion="Brainstorm YouTube titles for a cooking tutorial">Cooking tutorial titles</div>
+            </div>
+          </div>
+
+          <!-- User Message -->
+          <div class="message user-message ml-auto hidden" id="userMessageExample">
+            <p>What video topics should I cover about sustainable fashion?</p>
+          </div>
+
+          <!-- AI Response -->
+          <div class="message ai-message hidden" id="aiResponseExample">
+            <p class="font-medium">Great topic! Here are 5 compelling angles for your sustainable fashion video:</p>
+            
+            <ol class="list-decimal list-inside mt-2 space-y-1.5 text-sm pl-1">
+              <li><strong>Thrift Flip Challenge:</strong> Transform thrifted clothes into trendy outfits (show before/after)</li>
+              <li><strong>Brand Transparency:</strong> How to spot greenwashing vs. truly ethical brands</li>
+              <li><strong>30-Wear Challenge:</strong> Building a capsule wardrobe that lasts a month</li>
+              <li><strong>DIY Upcycling:</strong> Turn old t-shirts into tote bags in 5 minutes</li>
+              <li><strong>Cost Breakdown:</strong> Why sustainable fashion costs more (and when it's worth it)</li>
+            </ol>
+            
+            <p class="mt-3">Which angle interests you most? I can help develop it further!</p>
+          </div>
+
+          <!-- User Follow-up -->
+          <div class="message user-message ml-auto hidden" id="userFollowupExample">
+            <p>Let's develop the "Thrift Flip Challenge" idea. What materials would I need?</p>
+          </div>
+
+          <!-- AI Follow-up -->
+          <div class="message ai-message hidden" id="aiFollowupExample">
+            <p class="font-medium">Perfect! For the Thrift Flip Challenge, you'll need:</p>
+            
+            <ul class="list-disc list-inside mt-2 space-y-1.5 text-sm pl-1">
+              <li>3 thrifted clothing items (one should be oversized)</li>
+              <li>Basic sewing kit (or fabric glue for no-sew option)</li>
+              <li>Scissors, pins, and measuring tape</li>
+              <li>Chalk for marking fabric</li>
+              <li>Iron (for clean seams)</li>
+            </ul>
+            
+            <p class="mt-3">Here's a quick script outline:</p>
+            <blockquote class="border-l-2 border-accent pl-3 mt-2 text-sm italic">
+              "Today we're transforming this $5 thrifted button-down into a modern crop top. First, we'll take it in at the sides..."
+            </blockquote>
+            
+            <p class="mt-3">Want me to expand any section or suggest specific transformations?</p>
+          </div>
+        </div>
+
+        <!-- Chat Input Area -->
+        <div class="border-t border-slate-200 p-4 bg-white">
+          <div class="flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-1">
+              <input 
+                type="text" 
+                id="chatInput" 
+                placeholder="Type your message..." 
+                class="chat-input w-full pr-12"
+                aria-label="Chat message input"
+              >
+              <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-1">
+                <button class="p-1 text-slate-400 hover:text-slate-600" title="Upload image (future)" disabled>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M9 12h.01M15 6h.01M6 18h12a2 2 0 002-2V8a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <button class="p-1 text-slate-400 hover:text-slate-600" title="Generate image (future)" disabled>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.042 21.672L13.684 16H9.316l-1.358 5.672M9 11L8 9h8l-1 2m0 0a3 3 0 100 6 3 3 0 000-6z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <button id="sendBtn" class="bg-accent hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium transition">
+              Send
+            </button>
+          </div>
+          
+          <!-- Future Feature Hint (Mobile) -->
+          <p class="text-xs text-slate-500 mt-2 text-center md:hidden">
+            <span class="opacity-50">Image upload and generation coming soon</span>
+          </p>
+        </div>
+
+        <!-- Transition to Editor -->
+        <div class="p-4" id="transitionPanel">
+          <div class="transition-panel">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-slate-800">Ready to start scripting?</h3>
+                <p class="text-sm text-slate-600 mt-1">Your brainstorm session has created a solid foundation</p>
+              </div>
+              <button id="convertToScriptBtn" class="bg-accent hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-medium text-sm transition">
+                Convert to Script
+              </button>
+            </div>
+            
+            <div class="mt-3 pl-1 space-y-1.5 text-sm">
+              <p class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-accent mt-0.5 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>5 video angles outlined</span>
+              </p>
+              <p class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-accent mt-0.5 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Thrift flip challenge detailed</span>
+              </p>
+              <p class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-accent mt-0.5 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Basic script outline created</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Convert Button -->
+  <button id="mobileConvertBtn" class="md:hidden fixed bottom-20 right-6 bg-accent hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg shadow-lg flex items-center transition">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+    Convert to Script
+  </button>
+
+  <script>
+    // Suggestion pills
+    document.querySelectorAll('.suggestion-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.getElementById('chatInput').value = this.dataset.suggestion;
+        simulateMessageSend();
+      });
+    });
+    
+    // Send button
+    document.getElementById('sendBtn').addEventListener('click', simulateMessageSend);
+    
+    // Enter key
+    document.getElementById('chatInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        simulateMessageSend();
+      }
+    });
+    
+    // Convert to script
+    document.getElementById('convertToScriptBtn').addEventListener('click', convertToScript);
+    document.getElementById('mobileConvertBtn').addEventListener('click', convertToScript);
+    
+    // New session
+    document.getElementById('newSessionBtn').addEventListener('click', function() {
+      if (confirm('Start a new brainstorming session? Your current progress will be saved.')) {
+        // Reset chat
+        document.getElementById('userMessageExample').classList.add('hidden');
+        document.getElementById('aiResponseExample').classList.add('hidden');
+        document.getElementById('userFollowupExample').classList.add('hidden');
+        document.getElementById('aiFollowupExample').classList.add('hidden');
+        
+        // Show welcome message
+        document.getElementById('chatMessages').scrollTop = 0;
+      }
+    });
+    
+    function simulateMessageSend() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      
+      if (!message) return;
+      
+      // Show user message
+      const userMsg = document.getElementById('userMessageExample');
+      userMsg.querySelector('p').textContent = message;
+      userMsg.classList.remove('hidden');
+      
+      // Clear input
+      input.value = '';
+      
+      // Scroll to bottom
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+      
+      // Simulate AI response after delay
+      setTimeout(() => {
+        document.getElementById('aiResponseExample').classList.remove('hidden');
+        
+        // Simulate follow-up after more delay
+        setTimeout(() => {
+          document.getElementById('userFollowupExample').classList.remove('hidden');
+          setTimeout(() => {
+            document.getElementById('aiFollowupExample').classList.remove('hidden');
+            document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+          }, 800);
+        }, 1200);
+        
+        document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+      }, 1000);
+    }
+    
+    function convertToScript() {
+      // Simulate transition
+      document.getElementById('transitionPanel').innerHTML = `
+        <div class="bg-accent/10 border border-accent/20 rounded-xl p-4 text-center">
+          <svg class="animate-spin h-6 w-6 mx-auto text-accent mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p class="text-slate-700 font-medium">Converting to script...</p>
+          <p class="text-sm text-slate-500 mt-1">Preparing your outline for editing</p>
+        </div>
+      `;
+      
+      // Simulate redirect after delay
+      setTimeout(() => {
+        window.location.href = '/project/123'; // Redirect to editor
+      }, 1500);
+    }
+  </script>
+</body>
+</html>

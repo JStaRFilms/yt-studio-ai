@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScriptFlow | Enhanced Project Workspace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1e293b', // slate-900
+            accent: '#4f46e5',  // indigo-600
+            'ai-bg': '#f0f4ff', // indigo-50
+            'user-bg': '#f8fafc', // slate-50
+            'editor-bg': '#f8fafc'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .editor-pane {
+        @apply bg-editor-bg border border-slate-200 rounded-xl overflow-hidden;
+      }
+      .chat-pane {
+        @apply bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col;
+      }
+      .message {
+        @apply max-w-[85%] rounded-2xl p-3.5;
+      }
+      .ai-message {
+        @apply bg-ai-bg text-slate-800 ml-1;
+      }
+      .user-message {
+        @apply bg-user-bg text-slate-800 mr-1;
+      }
+      .chat-input {
+        @apply border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent;
+      }
+      .suggestion-pill {
+        @apply bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-sm cursor-pointer hover:bg-slate-200 transition;
+      }
+      .image-preview {
+        @apply mt-3 rounded-xl overflow-hidden border border-slate-200;
+      }
+      .insert-btn {
+        @apply ml-2 px-2 py-1 bg-accent hover:bg-indigo-700 text-white text-xs rounded transition;
+      }
+      .media-upload-area {
+        @apply border-2 border-dashed border-slate-300 rounded-xl p-3 text-center cursor-pointer hover:border-accent transition-colors;
+      }
+      .selected-text {
+        @apply bg-amber-50 border border-amber-200;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+  <!-- Mobile Navigation -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50">
+    <div class="flex justify-around py-3 px-4">
+      <button class="flex flex-col items-center text-accent">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span class="text-xs mt-1">Editor</span>
+      </button>
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+        </svg>
+        <span class="text-xs mt-1">AI Tools</span>
+      </button>
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M17.325 2.675l-.707.707M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM3 12h1m1.675-9.325l.707.707M12 3a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" />
+        </svg>
+        <span class="text-xs mt-1">Thumbnails</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Desktop Layout -->
+  <div class="flex">
+    <!-- Sidebar (Desktop) -->
+    <aside class="hidden md:block w-64 bg-white border-r border-slate-200 min-h-screen p-4">
+      <div class="flex items-center mb-8">
+        <div class="bg-accent w-8 h-8 rounded-lg flex items-center justify-center">
+          <span class="text-white font-bold text-sm">SF</span>
+        </div>
+        <h1 class="ml-2 text-lg font-semibold text-slate-800">ScriptFlow</h1>
+      </div>
+      
+      <div class="mb-6">
+        <a href="/dashboard" class="flex items-center px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+          Back to Dashboard
+        </a>
+      </div>
+      
+      <div class="mb-4">
+        <h2 class="px-4 text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Project</h2>
+        <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 mx-2">
+          <h3 class="font-medium text-slate-800 truncate">Tech Review Script</h3>
+          <p class="text-xs text-slate-500 mt-1">Active AI assistant</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 md:ml-64">
+      <!-- Top Bar -->
+      <header class="bg-white border-b border-slate-200">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 sm:px-6">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-800">Tech Review Script</h2>
+            <div class="mt-1 sm:mt-0 flex flex-wrap gap-2">
+              <span class="text-xs bg-slate-100 px-2 py-1 rounded-full">Transcript</span>
+              <span class="text-xs text-slate-500">Edited 5 minutes ago</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-3 mt-3 sm:mt-0">
+            <button id="uploadTranscript" class="flex items-center px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 8l4-4 4 4m-4-4v16" />
+              </svg>
+              Upload Transcript
+            </button>
+            <div class="relative">
+              <input type="text" placeholder="Search script..." class="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm w-40 focus:outline-none focus:ring-1 focus:ring-accent">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-2.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Workspace Content -->
+      <div class="p-4 sm:p-6 max-w-7xl mx-auto">
+        <!-- Mobile Project Header -->
+        <div class="md:hidden mb-4">
+          <div class="bg-accent/10 border border-accent/20 rounded-lg p-3">
+            <h3 class="font-medium text-slate-800">Tech Review Script</h3>
+            <p class="text-xs text-slate-500 mt-1">Active AI assistant</p>
+          </div>
+        </div>
+
+        <!-- Two-pane layout with enhanced chat -->
+        <div class="flex flex-col lg:flex-row gap-6">
+          <!-- Left Pane: Script Editor -->
+          <div class="lg:w-3/5 flex flex-col">
+            <div class="flex justify-between items-center mb-3">
+              <h3 class="font-medium text-slate-800">Script Editor</h3>
+              <div class="flex space-x-1">
+                <button class="p-1.5 text-slate-500 hover:bg-slate-100 rounded">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </button>
+                <button class="p-1.5 text-slate-500 hover:bg-slate-100 rounded">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Editor -->
+            <div class="editor-pane flex-1 flex-col">
+              <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+                <div class="flex space-x-1">
+                  <button class="p-1.5 text-slate-500 hover:bg-slate-100 rounded">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  <button class="p-1.5 text-slate-500 hover:bg-slate-100 rounded">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="text-xs text-slate-500">1,248 words • 12 min read</div>
+              </div>
+              
+              <div class="p-4 overflow-y-auto flex-1" style="min-height: 400px;" id="editorContent">
+                <div class="prose max-w-none">
+                  <p class="mb-4">Today we're diving into the new iPhone 15 Pro Max. I've been testing it for two weeks now, and I have to say... it's <strong>incredible</strong>. The titanium frame makes it so much lighter than the previous model, which is a huge improvement.</p>
+                  
+                  <p class="mb-4">The camera system is where this phone really shines. The new 5x optical zoom is game-changing for mobile photography. I took some shots at the park yesterday, and the detail was <em>astonishing</em>. You can see individual leaves on trees from 50 feet away.</p>
+                  
+                  <p class="mb-4 selected-text" id="selectedText">Now let's talk about performance. The A17 Pro chip is... well, it's fast. Like, really fast. I ran some benchmarks against the 14 Pro, and the difference is noticeable even in everyday tasks. Scrolling is smoother, apps launch quicker, and multitasking is a breeze.</p>
+                  
+                  <p class="mb-4">One thing I wasn't expecting was the battery life. Apple claims 20 hours of video playback, but in real-world use, I'm getting about 15 hours with mixed usage. That's still better than most Android flagships, but not quite as good as I hoped.</p>
+                  
+                  <p class="mb-4">The USB-C port is finally here! It's about time. File transfers are much faster now, and I don't need to carry multiple cables anymore. However, the charging speed still lags behind Android competitors. You'll need the 27W adapter for full speed, which costs extra.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Pane: Enhanced AI Chat -->
+          <div class="lg:w-2/5 flex flex-col">
+            <div class="flex justify-between items-center mb-3">
+              <h3 class="font-medium text-slate-800">AI Assistant</h3>
+              <div class="flex items-center space-x-1">
+                <span class="inline-flex items-center px-2 py-1 bg-accent/10 text-accent text-xs rounded-full">
+                  <span class="w-2 h-2 bg-green-500 rounded-full mr-1.5"></span>
+                  Active
+                </span>
+              </div>
+            </div>
+            
+            <div class="chat-pane flex-1 flex flex-col">
+              <!-- Chat Messages -->
+              <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chatMessages">
+                <!-- AI Welcome Message -->
+                <div class="message ai-message">
+                  <p class="font-medium">Hi! I'm your script assistant. I can help you write, rewrite, or improve any part of your script.</p>
+                  <p class="mt-2 text-sm">Try selecting text and asking me to:</p>
+                  <div class="mt-2 flex flex-wrap gap-1.5">
+                    <span class="suggestion-pill" data-suggestion="Make this more engaging">Make more engaging</span>
+                    <span class="suggestion-pill" data-suggestion="Shorten this section">Shorten section</span>
+                    <span class="suggestion-pill" data-suggestion="/generate image of iPhone camera close-up">Generate image</span>
+                  </div>
+                </div>
+                
+                <!-- User Message (with selected text context) -->
+                <div class="message user-message ml-auto hidden" id="userMessageExample">
+                  <p>Can you make this section more engaging? I want viewers to really feel the performance difference.</p>
+                  <div class="mt-2 bg-slate-50 p-2 rounded-lg text-sm">
+                    <p class="text-slate-600 text-xs uppercase tracking-wider mb-1">Selected text:</p>
+                    <p class="line-clamp-2">Now let's talk about performance. The A17 Pro chip is... well, it's fast. Like, really fast. I ran some benchmarks against the 14 Pro, and the difference is noticeable even in everyday tasks. Scrolling is smoother, apps launch quicker, and multitasking is a breeze.</p>
+                  </div>
+                </div>
+                
+                <!-- AI Response with rewrite -->
+                <div class="message ai-message hidden" id="aiResponseExample">
+                  <p class="font-medium">Here's a more engaging version that emphasizes the user experience:</p>
+                  
+                  <blockquote class="border-l-2 border-accent pl-3 mt-2 text-sm">
+                    "The A17 Pro chip isn't just faster on paper—it transforms your daily experience. When I scroll through Twitter, it's <em>perfectly smooth</em>, with zero stutter. Opening apps feels instantaneous—no more waiting for icons to respond. And when I'm editing 4K footage? The 14 Pro would chug, but the 15 Pro Max handles it like it's nothing."
+                  </blockquote>
+                  
+                  <div class="mt-3 flex space-x-2">
+                    <button id="insertRewriteBtn" class="insert-btn">Insert Rewrite</button>
+                    <button id="regenerateBtn" class="insert-btn bg-slate-200 text-slate-700 hover:bg-slate-300">Regenerate</button>
+                  </div>
+                </div>
+                
+                <!-- AI Response with generated image -->
+                <div class="message ai-message hidden" id="imageResponseExample">
+                  <p class="font-medium">Here's a visualization of the iPhone camera close-up you requested:</p>
+                  
+                  <div class="image-preview mt-2">
+                    <div class="bg-slate-200 border-b border-slate-300 p-2 text-center text-sm text-slate-500">
+                      Generated Image: iPhone 15 Pro Max Camera Close-up
+                    </div>
+                    <div class="h-40 bg-gradient-to-br from-rose-100 to-indigo-200 flex items-center justify-center">
+                      <div class="text-center">
+                        <div class="bg-white w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-dashed border-slate-300">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M9 12h.01M15 6h.01M6 18h12a2 2 0 002-2V8a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">AI-generated visualization</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="mt-3 flex space-x-2">
+                    <button class="insert-btn">Use in Thumbnail</button>
+                    <button class="insert-btn bg-slate-200 text-slate-700 hover:bg-slate-300">Regenerate</button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Media Upload Area (Hidden by default) -->
+              <div class="p-4 border-t border-slate-200 hidden" id="mediaUploadArea">
+                <div class="media-upload-area">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M9 12h.01M15 6h.01M6 18h12a2 2 0 002-2V8a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <p class="text-sm text-slate-600 mb-1">Drag & drop image or video here</p>
+                  <p class="text-xs text-slate-500">Max 25MB • JPG, PNG, MP4</p>
+                </div>
+              </div>
+              
+              <!-- Chat Input Area -->
+              <div class="border-t border-slate-200 p-4 bg-white">
+                <div class="flex flex-col gap-2">
+                  <div class="relative">
+                    <input 
+                      type="text" 
+                      id="chatInput" 
+                      placeholder="Ask me to rewrite, generate images, or help with your script..." 
+                      class="chat-input w-full pr-24"
+                      aria-label="Chat message input"
+                    >
+                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-2">
+                      <button id="mediaUploadBtn" class="p-1.5 text-slate-400 hover:text-slate-600" title="Upload image or video">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M9 12h.01M15 6h.01M6 18h12a2 2 0 002-2V8a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button id="imageGenBtn" class="p-1.5 text-slate-400 hover:text-slate-600" title="Generate image">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.042 21.672L13.684 16H9.316l-1.358 5.672M9 11L8 9h8l-1 2m0 0a3 3 0 100 6 3 3 0 000-6z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Suggested Prompts -->
+                  <div class="flex flex-wrap gap-1.5 text-xs">
+                    <span class="suggestion-pill" data-suggestion="Rewrite this to be more concise">Rewrite concisely</span>
+                    <span class="suggestion-pill" data-suggestion="Suggest 3 catchy titles">Suggest titles</span>
+                    <span class="suggestion-pill" data-suggestion="/generate image of tech comparison chart">Generate chart</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile New Project Button -->
+  <button class="md:hidden fixed bottom-20 right-6 bg-accent hover:bg-indigo-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+    </svg>
+  </button>
+
+  <script>
+    // Toggle media upload area
+    document.getElementById('mediaUploadBtn').addEventListener('click', function() {
+      document.getElementById('mediaUploadArea').classList.toggle('hidden');
+    });
+    
+    // Image generation button
+    document.getElementById('imageGenBtn').addEventListener('click', function() {
+      document.getElementById('chatInput').value = '/generate image of ';
+      document.getElementById('chatInput').focus();
+    });
+    
+    // Suggestion pills
+    document.querySelectorAll('.suggestion-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.getElementById('chatInput').value = this.dataset.suggestion;
+        document.getElementById('chatInput').focus();
+        simulateMessageSend();
+      });
+    });
+    
+    // Insert rewrite
+    document.getElementById('insertRewriteBtn').addEventListener('click', function() {
+      const editorContent = document.getElementById('editorContent').querySelector('.prose');
+      const selectedText = document.getElementById('selectedText');
+      
+      // Replace selected text with improved version
+      selectedText.innerHTML = `
+        The A17 Pro chip isn't just faster on paper—it transforms your daily experience. When I scroll through Twitter, it's <em>perfectly smooth</em>, with zero stutter. Opening apps feels instantaneous—no more waiting for icons to respond. And when I'm editing 4K footage? The 14 Pro would chug, but the 15 Pro Max handles it like it's nothing.
+      `;
+      
+      // Remove selection highlight
+      selectedText.classList.remove('selected-text');
+      
+      // Show success state
+      this.innerHTML = 'Inserted <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+      this.disabled = true;
+      
+      // Reset after delay
+      setTimeout(() => {
+        this.textContent = 'Insert Rewrite';
+        this.disabled = false;
+      }, 2000);
+    });
+    
+    // Regenerate response
+    document.getElementById('regenerateBtn').addEventListener('click', function() {
+      const originalBtnText = this.textContent;
+      this.textContent = 'Regenerating...';
+      this.disabled = true;
+      
+      setTimeout(() => {
+        const editorContent = document.getElementById('editorContent').querySelector('.prose');
+        const selectedText = document.getElementById('selectedText');
+        
+        // Replace with another variation
+        selectedText.innerHTML = `
+          What really impressed me was how the A17 Pro handles real-world tasks. Scrolling through feeds is buttery smooth—no more jank. Apps launch instantly, and even when I'm multitasking between heavy apps like Premiere Rush and Lightroom, there's zero lag. This is the kind of performance that makes you forget you're using a phone.
+        `;
+        
+        this.textContent = originalBtnText;
+        this.disabled = false;
+      }, 1000);
+    });
+    
+    // Send message
+    function simulateMessageSend() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      
+      if (!message) return;
+      
+      // Check for image generation command
+      if (message.startsWith('/generate')) {
+        showImageGeneration(message);
+        return;
+      }
+      
+      // Show user message
+      const userMsg = document.getElementById('userMessageExample');
+      userMsg.querySelector('p').textContent = message;
+      userMsg.classList.remove('hidden');
+      
+      // Clear input
+      input.value = '';
+      
+      // Scroll to bottom
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+      
+      // Simulate AI response after delay
+      setTimeout(() => {
+        document.getElementById('aiResponseExample').classList.remove('hidden');
+        document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+      }, 1000);
+    }
+    
+    // Handle image generation
+    function showImageGeneration(prompt) {
+      const input = document.getElementById('chatInput');
+      const userMsg = document.getElementById('userMessageExample');
+      
+      // Show user message
+      userMsg.querySelector('p').textContent = prompt;
+      userMsg.classList.remove('hidden');
+      
+      // Clear input
+      input.value = '';
+      
+      // Show loading state
+      const loadingMsg = document.createElement('div');
+      loadingMsg.className = 'message ai-message';
+      loadingMsg.innerHTML = `
+        <div class="flex items-center">
+          <svg class="animate-spin h-4 w-4 mr-2 text-accent" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Generating image: "${prompt.replace('/generate image of ', '')}"</span>
+        </div>
+      `;
+      document.getElementById('chatMessages').appendChild(loadingMsg);
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+      
+      // Simulate image generation
+      setTimeout(() => {
+        // Remove loading message
+        document.getElementById('chatMessages').removeChild(loadingMsg);
+        
+        // Show image result
+        document.getElementById('imageResponseExample').classList.remove('hidden');
+        document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+      }, 2000);
+    }
+    
+    // Send button
+    document.getElementById('chatInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        simulateMessageSend();
+      }
+    });
+  </script>
+</body>
+</html>

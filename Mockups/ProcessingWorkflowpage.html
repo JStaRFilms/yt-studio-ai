@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScriptFlow | Processing Workflow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1e293b', // slate-900
+            accent: '#4f46e5',  // indigo-600
+            'stage-bg': '#f8fafc', // slate-50
+            'processing': '#fff9db', // amber-50
+            'complete': '#f0fdf4' // emerald-50
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .stage-container {
+        @apply bg-white border border-slate-200 rounded-xl p-5 mb-6;
+      }
+      .stage-header {
+        @apply flex items-center justify-between mb-4 cursor-pointer;
+      }
+      .stage-title {
+        @apply font-medium text-slate-800 flex items-center;
+      }
+      .stage-status {
+        @apply inline-flex items-center px-2.5 py-1 text-xs rounded-full;
+      }
+      .stage-content {
+        @apply transition-all duration-300 overflow-hidden;
+      }
+      .text-area {
+        @apply w-full min-h-[150px] border border-slate-300 rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent;
+      }
+      .prompt-input {
+        @apply w-full border border-slate-300 rounded-lg px-3 py-2.5 mt-3 text-sm focus:outline-none focus:ring-1 focus:ring-accent;
+      }
+      .processing-indicator {
+        @apply h-2 bg-amber-200 rounded-full overflow-hidden mt-4;
+      }
+      .processing-progress {
+        @apply h-full bg-amber-500 rounded-full transition-all;
+      }
+      .result-container {
+        @apply bg-slate-50 border border-slate-200 rounded-lg p-4 mt-4;
+      }
+      .result-item {
+        @apply mb-3 last:mb-0 p-3 bg-white border border-slate-200 rounded-lg;
+      }
+      .tag {
+        @apply bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs inline-block mr-1 mb-1;
+      }
+      .stage-number {
+        @apply w-7 h-7 rounded-full flex items-center justify-center mr-3 font-medium;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+  <!-- Mobile Navigation -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50">
+    <div class="flex justify-around py-3 px-4">
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span class="text-xs mt-1">Editor</span>
+      </button>
+      <button class="flex flex-col items-center text-accent">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.004l-2.228 3.91M9 9l5 4" />
+        </svg>
+        <span class="text-xs mt-1">Workflow</span>
+      </button>
+      <button class="flex flex-col items-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M17.325 2.675l-.707.707M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM3 12h1m1.675-9.325l.707.707M12 3a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" />
+        </svg>
+        <span class="text-xs mt-1">Thumbnails</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Desktop Layout -->
+  <div class="flex">
+    <!-- Sidebar (Desktop) -->
+    <aside class="hidden md:block w-64 bg-white border-r border-slate-200 min-h-screen p-4">
+      <div class="flex items-center mb-8">
+        <div class="bg-accent w-8 h-8 rounded-lg flex items-center justify-center">
+          <span class="text-white font-bold text-sm">SF</span>
+        </div>
+        <h1 class="ml-2 text-lg font-semibold text-slate-800">ScriptFlow</h1>
+      </div>
+      
+      <div class="mb-6">
+        <a href="/dashboard" class="flex items-center px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+          Back to Dashboard
+        </a>
+      </div>
+      
+      <div class="mb-4">
+        <h2 class="px-4 text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Project</h2>
+        <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 mx-2">
+          <h3 class="font-medium text-slate-800 truncate">Tech Review Script</h3>
+          <p class="text-xs text-slate-500 mt-1">Processing workflow</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 md:ml-64">
+      <!-- Top Bar -->
+      <header class="bg-white border-b border-slate-200">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 sm:px-6">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-800">Processing Workflow</h2>
+            <div class="mt-1 sm:mt-0 flex flex-wrap gap-2">
+              <span class="text-xs bg-slate-100 px-2 py-1 rounded-full">Transcript-first</span>
+              <span class="text-xs text-slate-500">Step-by-step processing</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-3 mt-3 sm:mt-0">
+            <button id="regenerateAllBtn" class="flex items-center px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2A8.001 8.001 0 0020.418 9m0 0h-5m-6 15h6m-6 0c7.12 0 12.88-5.76 12.88-12.88 0-.214-.004-.427-.012-.638C20.439 12.543 19.9 14 18.966 15H14.5m1.5 1.5v-3m-3 1.5h-3m-3-1.5h-.008V12h-.008m0 0h.008v-.008m-.008 0 h-.008v-.008m-.008 0 h-.008v-.008m-.008 0 h-.008v-.008" />
+              </svg>
+              Regenerate All
+            </button>
+            <button id="backToEditorBtn" class="md:hidden flex items-center px-3 py-2 text-accent border border-accent rounded-lg text-sm hover:bg-accent/5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Editor
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Workflow Content -->
+      <div class="p-4 sm:p-6 max-w-3xl mx-auto">
+        <!-- Mobile Project Header -->
+        <div class="md:hidden mb-4">
+          <div class="bg-accent/10 border border-accent/20 rounded-lg p-3">
+            <h3 class="font-medium text-slate-800">Tech Review Script</h3>
+            <p class="text-xs text-slate-500 mt-1">Processing workflow</p>
+          </div>
+        </div>
+
+        <!-- Workflow Progress -->
+        <div class="mb-8">
+          <h3 class="font-medium text-slate-800 mb-3">Workflow Progress</h3>
+          <div class="flex items-center">
+            <div class="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+              <div class="h-full bg-accent" style="width: 60%"></div>
+            </div>
+            <span class="ml-3 text-sm font-medium text-slate-700">3 of 5 steps complete</span>
+          </div>
+          <div class="mt-2 flex justify-between text-xs text-slate-500">
+            <span>Transcript</span>
+            <span>Refined Script</span>
+            <span>Titles</span>
+            <span>Thumbnail</span>
+            <span>Description</span>
+          </div>
+        </div>
+
+        <!-- Stage 1: Transcript -->
+        <div class="stage-container" id="stage1">
+          <div class="stage-header" data-stage="1">
+            <div class="flex items-center">
+              <div class="stage-number bg-accent text-white">1</div>
+              <div class="stage-title">
+                <span>Upload Transcript</span>
+                <span class="ml-2 text-xs text-slate-500">(Required)</span>
+              </div>
+            </div>
+            <div class="stage-status bg-accent/10 text-accent">Complete</div>
+          </div>
+          
+          <div class="stage-content" style="max-height: 1000px;">
+            <p class="text-sm text-slate-600 mb-4">Upload your raw transcript file or paste the text below. Supported formats: .txt, .srt</p>
+            
+            <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center" id="transcriptUploadArea">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto text-slate-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 8l4-4 4 4m-4-4v16" />
+              </svg>
+              <p class="text-sm text-slate-600 mb-1">Drag & drop transcript file here</p>
+              <p class="text-xs text-slate-500">or</p>
+              <button id="browseTranscript" class="mt-2 text-accent font-medium hover:underline">Browse files</button>
+              <input type="file" id="transcriptFile" class="hidden" accept=".txt,.srt">
+            </div>
+            
+            <div class="mt-4 hidden" id="transcriptContent">
+              <textarea class="text-area font-mono text-sm" readonly>
+Today we're diving into the new iPhone 15 Pro Max. I've been testing it for two weeks now, and I have to say... it's incredible. The titanium frame makes it so much lighter than the previous model, which is a huge improvement.
+
+The camera system is where this phone really shines. The new 5x optical zoom is game-changing for mobile photography. I took some shots at the park yesterday, and the detail was astonishing. You can see individual leaves on trees from 50 feet away.
+
+Now let's talk about performance. The A17 Pro chip is... well, it's fast. Like, really fast. I ran some benchmarks against the 14 Pro, and the difference is noticeable even in everyday tasks. Scrolling is smoother, apps launch quicker, and multitasking is a breeze.
+
+One thing I wasn't expecting was the battery life. Apple claims 20 hours of video playback, but in real-world use, I'm getting about 15 hours with mixed usage. That's still better than most Android flagships, but not quite as good as I hoped.
+
+The USB-C port is finally here! It's about time. File transfers are much faster now, and I don't need to carry multiple cables anymore. However, the charging speed still lags behind Android competitors. You'll need the 27W adapter for full speed, which costs extra.
+              </textarea>
+              
+              <div class="mt-4 flex justify-end">
+                <button id="nextStageBtn1" class="bg-accent hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition">
+                  Continue to Refined Script
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 2: Refined Script -->
+        <div class="stage-container" id="stage2">
+          <div class="stage-header" data-stage="2">
+            <div class="flex items-center">
+              <div class="stage-number bg-accent text-white">2</div>
+              <div class="stage-title">
+                <span>Refine Script</span>
+              </div>
+            </div>
+            <div class="stage-status bg-accent/10 text-accent">Processing</div>
+          </div>
+          
+          <div class="stage-content" style="max-height: 1000px;">
+            <p class="text-sm text-slate-600 mb-4">The AI will remove filler words and tighten your script for better pacing and engagement.</p>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="refinePrompt">
+                Customization Prompt (Optional)
+              </label>
+              <input type="text" id="refinePrompt" class="prompt-input" placeholder="e.g., 'Make it more engaging for tech enthusiasts'">
+            </div>
+            
+            <div class="processing-indicator hidden" id="refineProcessing">
+              <div class="processing-progress" style="width: 0%"></div>
+            </div>
+            
+            <div class="hidden" id="refineResults">
+              <h4 class="font-medium text-slate-800 mb-2">Refined Script</h4>
+              <textarea class="text-area font-mono text-sm" id="refinedScript">
+Today we're diving into the new iPhone 15 Pro Max. The titanium frame makes it lighter than the previous model. The camera system shines with the new 5x optical zoom. I took shots at the park; the detail was astonishing.
+
+The A17 Pro chip delivers remarkable performance. Benchmarks show significant improvements over the 14 Pro. Scrolling is smoother, apps launch faster, and multitasking feels effortless.
+
+Battery life meets expectations with 15 hours of mixed usage. While not class-leading, it remains competitive among flagship devices.
+
+The long-awaited USB-C port enables faster file transfers. Note that maximum charging speed requires Apple's 27W adapter (sold separately).
+              </textarea>
+              
+              <div class="mt-4 flex justify-between">
+                <div>
+                  <span class="inline-flex items-center px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
+                    847 words • 32% reduction
+                  </span>
+                </div>
+                <div class="flex space-x-3">
+                  <button id="regenerateRefine" class="border border-slate-300 text-slate-700 px-3 py-2 rounded-lg text-sm hover:bg-slate-50">
+                    Regenerate
+                  </button>
+                  <button id="nextStageBtn2" class="bg-accent hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                    Continue to Titles
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex justify-end mt-4">
+              <button id="processRefineBtn" class="bg-accent hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition">
+                Process Script
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 3: Titles -->
+        <div class="stage-container" id="stage3">
+          <div class="stage-header" data-stage="3">
+            <div class="flex items-center">
+              <div class="stage-number bg-slate-200 text-slate-700">3</div>
+              <div class="stage-title">
+                <span>Generate Titles</span>
+              </div>
+            </div>
+            <div class="stage-status bg-slate-100 text-slate-700">Pending</div>
+          </div>
+          
+          <div class="stage-content" style="max-height: 0px; padding-top: 0; padding-bottom: 0;">
+            <p class="text-sm text-slate-600 mb-4">Create compelling titles that will increase your video's click-through rate.</p>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="titlePrompt">
+                Customization Prompt (Optional)
+              </label>
+              <input type="text" id="titlePrompt" class="prompt-input" placeholder="e.g., 'Focus on performance improvements'">
+            </div>
+            
+            <div class="processing-indicator hidden" id="titleProcessing">
+              <div class="processing-progress" style="width: 0%"></div>
+            </div>
+            
+            <div class="hidden" id="titleResults">
+              <h4 class="font-medium text-slate-800 mb-3">Generated Titles</h4>
+              
+              <div class="space-y-3">
+                <div class="result-item">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="font-medium">iPhone 15 Pro Max Review: The Titanium Revolution</p>
+                      <p class="text-xs text-slate-500 mt-1">Strong focus on design innovation</p>
+                    </div>
+                    <button class="text-accent text-sm hover:underline">Use this</button>
+                  </div>
+                </div>
+                
+                <div class="result-item">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="font-medium">iPhone 15 Pro Max: 2 Weeks of Real-World Testing</p>
+                      <p class="text-xs text-slate-500 mt-1">Highlights hands-on experience</p>
+                    </div>
+                    <button class="text-accent text-sm hover:underline">Use this</button>
+                  </div>
+                </div>
+                
+                <div class="result-item">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="font-medium">iPhone 15 Pro Max Camera Test: 5x Optical Zoom Results</p>
+                      <p class="text-xs text-slate-500 mt-1">Focuses on camera capabilities</p>
+                    </div>
+                    <button class="text-accent text-sm hover:underline">Use this</button>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4 flex justify-between">
+                <div>
+                  <span class="inline-flex items-center px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
+                    3 options generated
+                  </span>
+                </div>
+                <div class="flex space-x-3">
+                  <button id="regenerateTitles" class="border border-slate-300 text-slate-700 px-3 py-2 rounded-lg text-sm hover:bg-slate-50">
+                    Regenerate
+                  </button>
+                  <button id="nextStageBtn3" class="bg-accent hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                    Continue to Thumbnail
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex justify-end mt-4">
+              <button id="processTitlesBtn" class="bg-accent hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition">
+                Generate Titles
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 4: Thumbnail -->
+        <div class="stage-container" id="stage4">
+          <div class="stage-header" data-stage="4">
+            <div class="flex items-center">
+              <div class="stage-number bg-slate-200 text-slate-700">4</div>
+              <div class="stage-title">
+                <span>Generate Thumbnail</span>
+              </div>
+            </div>
+            <div class="stage-status bg-slate-100 text-slate-700">Pending</div>
+          </div>
+          
+          <div class="stage-content" style="max-height: 0px; padding-top: 0; padding-bottom: 0;">
+            <p class="text-sm text-slate-600 mb-4">Create visually appealing thumbnails that will increase your video's click-through rate.</p>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="thumbnailPrompt">
+                Customization Prompt (Optional)
+              </label>
+              <input type="text" id="thumbnailPrompt" class="prompt-input" placeholder="e.g., 'Include my face in the bottom right corner'">
+            </div>
+            
+            <div class="processing-indicator hidden" id="thumbnailProcessing">
+              <div class="processing-progress" style="width: 0%"></div>
+            </div>
+            
+            <div class="hidden" id="thumbnailResults">
+              <h4 class="font-medium text-slate-800 mb-3">Generated Thumbnails</h4>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <!-- Thumbnail 1 -->
+                <div class="border border-slate-200 rounded-lg overflow-hidden">
+                  <div class="aspect-video bg-gradient-to-r from-indigo-600 to-purple-700 flex items-end p-3">
+                    <p class="text-white font-medium text-sm line-clamp-2">iPhone 15 Pro Max Review: The Titanium Revolution</p>
+                  </div>
+                  <div class="p-2 bg-slate-50 border-t border-slate-200 text-center">
+                    <button class="text-accent text-sm hover:underline">Use this</button>
+                  </div>
+                </div>
+                
+                <!-- Thumbnail 2 -->
+                <div class="border border-slate-200 rounded-lg overflow-hidden">
+                  <div class="aspect-video bg-gradient-to-r from-rose-500 to-pink-600 flex items-end p-3">
+                    <p class="text-white font-medium text-sm line-clamp-2">iPhone 15 Pro Max: Real-World Testing</p>
+                  </div>
+                  <div class="p-2 bg-slate-50 border-t border-slate-200 text-center">
+                    <button class="text-accent text-sm hover:underline">Use this</button>
+                  </div>
+                </div>
+                
+                <!-- Thumbnail 3 -->
+                <div class="border border-slate-200 rounded-lg overflow-hidden">
+                  <div class="aspect-video bg-gradient-to-r from-blue-500 to-cyan-600 flex items-end p-3">
+                    <p class="text-white font-medium text-sm line-clamp-2">iPhone 15 Pro Max Camera Test</p>
+                  </div>
+                  <div class="p-2 bg-slate-50 border-t border-slate-200 text-center">
+                    <button class="text-accent text-sm hover:underline">Use this</button>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4 flex justify-between">
+                <div>
+                  <span class="inline-flex items-center px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
+                    3 options generated
+                  </span>
+                </div>
+                <div class="flex space-x-3">
+                  <button id="regenerateThumbnails" class="border border-slate-300 text-slate-700 px-3 py-2 rounded-lg text-sm hover:bg-slate-50">
+                    Regenerate
+                  </button>
+                  <button id="nextStageBtn4" class="bg-accent hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                    Continue to Description
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex justify-end mt-4">
+              <button id="processThumbnailsBtn" class="bg-accent hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition">
+                Generate Thumbnails
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 5: Description & Tags -->
+        <div class="stage-container" id="stage5">
+          <div class="stage-header" data-stage="5">
+            <div class="flex items-center">
+              <div class="stage-number bg-slate-200 text-slate-700">5</div>
+              <div class="stage-title">
+                <span>Generate Description & Tags</span>
+              </div>
+            </div>
+            <div class="stage-status bg-slate-100 text-slate-700">Pending</div>
+          </div>
+          
+          <div class="stage-content" style="max-height: 0px; padding-top: 0; padding-bottom: 0;">
+            <p class="text-sm text-slate-600 mb-4">Create a compelling video description and relevant tags to improve discoverability.</p>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="descriptionPrompt">
+                Customization Prompt (Optional)
+              </label>
+              <input type="text" id="descriptionPrompt" class="prompt-input" placeholder="e.g., 'Focus on camera capabilities and battery life'">
+            </div>
+            
+            <div class="processing-indicator hidden" id="descriptionProcessing">
+              <div class="processing-progress" style="width: 0%"></div>
+            </div>
+            
+            <div class="hidden" id="descriptionResults">
+              <div class="result-container">
+                <h4 class="font-medium text-slate-800 mb-2">Video Description</h4>
+                <textarea class="text-area" id="videoDescription">
+In this hands-on review, we test the iPhone 15 Pro Max for two weeks. See how the titanium frame, 5x optical zoom, and A17 Pro chip perform in real-world scenarios. Plus, battery life tests and USB-C comparison with Android.
+
+⏱️ Chapters:
+0:00 - Intro
+1:22 - Design & Build
+3:15 - Camera Performance
+5:47 - Battery Life
+7:33 - Performance Benchmarks
+9:18 - USB-C Port Analysis
+11:05 - Final Verdict
+
+🔔 Subscribe for more tech reviews: @TechFlow
+
+#iPhone15 #Apple #TechReview #iPhoneReview #Smartphone
+                </textarea>
+              </div>
+              
+              <div class="result-container mt-4">
+                <h4 class="font-medium text-slate-800 mb-2">Tags</h4>
+                <div>
+                  <span class="tag">iPhone 15</span>
+                  <span class="tag">Apple</span>
+                  <span class="tag">Tech Review</span>
+                  <span class="tag">Camera Test</span>
+                  <span class="tag">Mobile</span>
+                  <span class="tag">Smartphone</span>
+                  <span class="tag">iOS</span>
+                  <span class="tag">TechFlow</span>
+                </div>
+              </div>
+              
+              <div class="mt-4 flex justify-between">
+                <div>
+                  <span class="inline-flex items-center px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
+                    Description & tags generated
+                  </span>
+                </div>
+                <div class="flex space-x-3">
+                  <button id="regenerateDescription" class="border border-slate-300 text-slate-700 px-3 py-2 rounded-lg text-sm hover:bg-slate-50">
+                    Regenerate
+                  </button>
+                  <button id="completeWorkflowBtn" class="bg-accent hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                    Complete Workflow
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex justify-end mt-4">
+              <button id="processDescriptionBtn" class="bg-accent hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition">
+                Generate Description
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Workflow Completion -->
+        <div class="hidden bg-white border border-slate-200 rounded-xl p-6" id="workflowComplete">
+          <div class="text-center">
+            <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-medium text-slate-800 mb-2">Workflow Complete!</h3>
+            <p class="text-slate-600 mb-6">Your video is ready to publish with all metadata optimized for maximum engagement.</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div class="border border-slate-200 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-slate-800 mb-1">3</div>
+                <div class="text-sm text-slate-500">Title Options</div>
+              </div>
+              <div class="border border-slate-200 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-slate-800 mb-1">3</div>
+                <div class="text-sm text-slate-500">Thumbnail Options</div>
+              </div>
+              <div class="border border-slate-200 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-slate-800 mb-1">8</div>
+                <div class="text-sm text-slate-500">Tags Generated</div>
+              </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row sm:justify-center gap-3">
+              <button id="backToEditBtn" class="px-5 py-2.5 border border-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50">
+                Edit Refined Script
+              </button>
+              <button id="publishBtn" class="px-5 py-2.5 bg-accent hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition">
+                Publish to YouTube
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Complete Button -->
+  <button id="mobileCompleteBtn" class="md:hidden fixed bottom-6 left-4 right-4 bg-accent hover:bg-indigo-700 text-white py-3 rounded-xl shadow-lg flex items-center justify-center font-medium transition hidden">
+    Complete Workflow
+  </button>
+
+  <script>
+    // Stage expansion
+    document.querySelectorAll('.stage-header').forEach(header => {
+      header.addEventListener('click', function() {
+        const stage = this.getAttribute('data-stage');
+        const content = this.nextElementSibling;
+        const container = this.parentElement;
+        
+        // Toggle current stage
+        if (container.classList.contains('expanded')) {
+          container.classList.remove('expanded');
+          content.style.maxHeight = '0px';
+          content.style.paddingTop = '0';
+          content.style.paddingBottom = '0';
+        } else {
+          // Collapse all other stages
+          document.querySelectorAll('.stage-container.expanded').forEach(other => {
+            other.classList.remove('expanded');
+            other.querySelector('.stage-content').style.maxHeight = '0px';
+            other.querySelector('.stage-content').style.paddingTop = '0';
+            other.querySelector('.stage-content').style.paddingBottom = '0';
+          });
+          
+          // Expand current stage
+          container.classList.add('expanded');
+          const contentHeight = content.scrollHeight;
+          content.style.maxHeight = contentHeight + 'px';
+          content.style.paddingTop = '1rem';
+          content.style.paddingBottom = '1rem';
+        }
+      });
+    });
+    
+    // Auto-expand stage 2 (processing)
+    setTimeout(() => {
+      document.querySelector('#stage2 .stage-header').click();
+    }, 300);
+    
+    // Transcript upload
+    document.getElementById('browseTranscript').addEventListener('click', function() {
+      document.getElementById('transcriptFile').click();
+    });
+    
+    document.getElementById('transcriptFile').addEventListener('change', function(e) {
+      if (this.files.length > 0) {
+        document.getElementById('transcriptUploadArea').classList.add('hidden');
+        document.getElementById('transcriptContent').classList.remove('hidden');
+      }
+    });
+    
+    // Process refined script
+    document.getElementById('processRefineBtn').addEventListener('click', function() {
+      const prompt = document.getElementById('refinePrompt').value;
+      const processing = document.getElementById('refineProcessing');
+      const results = document.getElementById('refineResults');
+      
+      // Show processing
+      this.classList.add('hidden');
+      processing.classList.remove('hidden');
+      
+      // Simulate processing
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        processing.querySelector('.processing-progress').style.width = `${progress}%`;
+        
+        if (progress >= 100) {
+          clearInterval(interval);
+          
+          // Show results
+          setTimeout(() => {
+            processing.classList.add('hidden');
+            results.classList.remove('hidden');
+            document.getElementById('stage2').querySelector('.stage-status').textContent = 'Complete';
+            document.getElementById('stage2').querySelector('.stage-number').className = 'stage-number bg-accent text-white';
+            
+            // Update progress bar
+            document.querySelector('.progress-bar .bg-accent').style.width = '60%';
+          }, 300);
+        }
+      }, 150);
+    });
+    
+    // Process titles
+    document.getElementById('processTitlesBtn').addEventListener('click', function() {
+      const prompt = document.getElementById('titlePrompt').value;
+      const processing = document.getElementById('titleProcessing');
+      const results = document.getElementById('titleResults');
+      
+      // Show processing
+      this.classList.add('hidden');
+      processing.classList.remove('hidden');
+      
+      // Simulate processing
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 15;
+        processing.querySelector('.processing-progress').style.width = `${progress}%`;
+        
+        if (progress >= 100) {
+          clearInterval(interval);
+          
+          // Show results
+          setTimeout(() => {
+            processing.classList.add('hidden');
+            results.classList.remove('hidden');
+            document.getElementById('stage3').querySelector('.stage-status').textContent = 'Complete';
+            document.getElementById('stage3').querySelector('.stage-number').className = 'stage-number bg-accent text-white';
+            
+            // Update progress bar
+            document.querySelector('.progress-bar .bg-accent').style.width = '75%';
+          }, 300);
+        }
+      }, 100);
+    });
+    
+    // Process thumbnails
+    document.getElementById('processThumbnailsBtn').addEventListener('click', function() {
+      const prompt = document.getElementById('thumbnailPrompt').value;
+      const processing = document.getElementById('thumbnailProcessing');
+      const results = document.getElementById('thumbnailResults');
+      
+      // Show processing
+      this.classList.add('hidden');
+      processing.classList.remove('hidden');
+      
+      // Simulate processing
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 12;
+        processing.querySelector('.processing-progress').style.width = `${progress}%`;
+        
+        if (progress >= 100) {
+          clearInterval(interval);
+          
+          // Show results
+          setTimeout(() => {
+            processing.classList.add('hidden');
+            results.classList.remove('hidden');
+            document.getElementById('stage4').querySelector('.stage-status').textContent = 'Complete';
+            document.getElementById('stage4').querySelector('.stage-number').className = 'stage-number bg-accent text-white';
+            
+            // Update progress bar
+            document.querySelector('.progress-bar .bg-accent').style.width = '90%';
+          }, 300);
+        }
+      }, 120);
+    });
+    
+    // Process description
+    document.getElementById('processDescriptionBtn').addEventListener('click', function() {
+      const prompt = document.getElementById('descriptionPrompt').value;
+      const processing = document.getElementById('descriptionProcessing');
+      const results = document.getElementById('descriptionResults');
+      
+      // Show processing
+      this.classList.add('hidden');
+      processing.classList.remove('hidden');
+      
+      // Simulate processing
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        processing.querySelector('.processing-progress').style.width = `${progress}%`;
+        
+        if (progress >= 100) {
+          clearInterval(interval);
+          
+          // Show results
+          setTimeout(() => {
+            processing.classList.add('hidden');
+            results.classList.remove('hidden');
+            document.getElementById('stage5').querySelector('.stage-status').textContent = 'Complete';
+            document.getElementById('stage5').querySelector('.stage-number').className = 'stage-number bg-accent text-white';
+            
+            // Update progress bar
+            document.querySelector('.progress-bar .bg-accent').style.width = '100%';
+            
+            // Show complete button
+            document.getElementById('mobileCompleteBtn').classList.remove('hidden');
+          }, 300);
+        }
+      }, 150);
+    });
+    
+    // Stage navigation
+    document.getElementById('nextStageBtn1').addEventListener('click', function() {
+      document.querySelector('#stage1 .stage-header').click();
+      setTimeout(() => {
+        document.querySelector('#stage2 .stage-header').click();
+      }, 300);
+    });
+    
+    document.getElementById('nextStageBtn2').addEventListener('click', function() {
+      document.querySelector('#stage2 .stage-header').click();
+      setTimeout(() => {
+        document.querySelector('#stage3 .stage-header').click();
+      }, 300);
+    });
+    
+    document.getElementById('nextStageBtn3').addEventListener('click', function() {
+      document.querySelector('#stage3 .stage-header').click();
+      setTimeout(() => {
+        document.querySelector('#stage4 .stage-header').click();
+      }, 300);
+    });
+    
+    document.getElementById('nextStageBtn4').addEventListener('click', function() {
+      document.querySelector('#stage4 .stage-header').click();
+      setTimeout(() => {
+        document.querySelector('#stage5 .stage-header').click();
+      }, 300);
+    });
+    
+    document.getElementById('completeWorkflowBtn').addEventListener('click', function() {
+      document.getElementById('workflowComplete').classList.remove('hidden');
+      document.querySelector('#stage5 .stage-header').click();
+    });
+    
+    // Regenerate buttons
+    document.querySelectorAll('[id^="regenerate"]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const stageId = this.id.replace('regenerate', '').toLowerCase();
+        const processingId = stageId + 'Processing';
+        const resultsId = stageId + 'Results';
+        
+        document.getElementById(processingId).classList.remove('hidden');
+        document.getElementById(resultsId).classList.add('hidden');
+        
+        // Simulate regeneration
+        setTimeout(() => {
+          document.getElementById(processingId).classList.add('hidden');
+          document.getElementById(resultsId).classList.remove('hidden');
+        }, 1200);
+      });
+    });
+    
+    // Regenerate all
+    document.getElementById('regenerateAllBtn').addEventListener('click', function() {
+      // Reset all stages
+      document.querySelectorAll('.stage-container').forEach(container => {
+        container.classList.remove('expanded');
+        container.querySelector('.stage-content').style.maxHeight = '0px';
+        container.querySelector('.stage-content').style.paddingTop = '0';
+        container.querySelector('.stage-content').style.paddingBottom = '0';
+      });
+      
+      // Reset status
+      document.querySelectorAll('.stage-status').forEach(status => {
+        status.textContent = status.textContent.includes('Complete') ? 'Pending' : status.textContent;
+      });
+      
+      document.querySelectorAll('.stage-number').forEach(num => {
+        if (num.textContent !== '1') {
+          num.className = 'stage-number bg-slate-200 text-slate-700';
+        }
+      });
+      
+      // Reset content visibility
+      document.getElementById('transcriptContent').classList.add('hidden');
+      document.getElementById('transcriptUploadArea').classList.remove('hidden');
+      
+      document.querySelectorAll('.processing-indicator').forEach(indicator => {
+        indicator.classList.add('hidden');
+      });
+      
+      document.querySelectorAll('.stage-content > div:not(:first-child)').forEach(content => {
+        content.classList.add('hidden');
+      });
+      
+      document.querySelectorAll('button[id^="process"]').forEach(btn => {
+        btn.classList.remove('hidden');
+      });
+      
+      // Reset progress
+      document.querySelector('.progress-bar .bg-accent').style.width = '20%';
+      
+      // Show transcript stage
+      setTimeout(() => {
+        document.querySelector('#stage1 .stage-header').click();
+      }, 300);
+    });
+    
+    // Publish button
+    document.getElementById('publishBtn').addEventListener('click', function() {
+      const btn = this;
+      const originalText = btn.textContent;
+      
+      // Show loading
+      btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Publishing...';
+      btn.disabled = true;
+      
+      // Simulate publishing
+      setTimeout(() => {
+        alert('Video published successfully to YouTube!');
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }, 1500);
+    });
+  </script>
+</body>
+</html>
