@@ -30,6 +30,7 @@
 *   **AI Interaction Model:** Implemented a tabbed interface in the project workspace to switch between the AI Assistant (for conversational, iterative tasks) and AI Tools (for one-shot actions like script cleanup). This provides dedicated spaces for different types of AI interaction.
 *   **Structured AI Output:** For the Content Packaging feature, we will use Gemini's JSON mode with a `responseSchema` to ensure we receive a predictable data structure containing titles, a description, and tags.
 *   **Ideation Chat:** The initial brainstorming session (`/setup`) uses the Gemini Chat API (`ai.chats.create`) to maintain a stateful, context-aware conversation. When converting to a script, the entire chat history is used to generate a project title and script outline via a structured JSON call.
+*   **Contextual Text Transfer:** Implemented a contextual toolbar for replacing or appending text from the AI chat to the script editor. This provides a more fluid and intuitive editing experience than a simple "insert" button.
 
 ## 4. Development Plan & Progress
 
@@ -51,6 +52,7 @@
 - [x] Implement FR-005: Add an "AI Edit" tool to automatically clean up the full script, removing filler words and redundancies.
 - [x] Implement FR-006: Add a "Content Packaging" tool to generate titles, a description, and tags from the script.
 - [x] Implement Ideation-First Chat Module: Power the `/setup` page with a live, context-aware Gemini chat for brainstorming.
+- [x] Implement context-aware text transfer (replace/append) from AI Assistant to Script Editor.
 
 **Phase 3: Polish & Refinement**
 - [ ] Conduct a full accessibility audit (A11y).

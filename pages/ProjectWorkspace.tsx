@@ -5,6 +5,8 @@ import EditorPane from '../components/EditorPane';
 import AIChatPane from '../components/AIChatPane';
 import AIToolsPane from '../components/AIToolsPane';
 import ProjectMobileNav from '../components/ProjectMobileNav';
+import Modal from '../components/Modal';
+import ContextualToolbar from '../components/ContextualToolbar';
 import { UploadCloudIcon, ChatIcon, AIToolsIcon } from '../components/icons';
 import { getProject, updateProject, Project, ChatMessage } from '../utils/db';
 
@@ -16,9 +18,17 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedText, setSelectedText] = useState<string>('');
+  const [sourceSelection, setSourceSelection] = useState<string>('');
+  const [editorSelection, setEditorSelection] = useState<{ start: number; end: number } | null>(null);
+  const [editorFocused, setEditorFocused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<'chat' | 'tools'>('chat');
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '' });
+
+  const showModal = (title: string, message: string) => {
+    setModal({ isOpen: true, title, message });
+  };
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -63,6 +73,24 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
     }
   };
 
+  const handleInsertIntoScript = (textToInsert: string) => {
+    if (!project || !editorSelection) return;
+
+    const { start, end } = editorSelection;
+    const currentScript = project.script || '';
+    const isAppending = start === end;
+    
+    const newScript = isAppending
+      ? currentScript.slice(0, start) + textToInsert + currentScript.slice(start)
+      : currentScript.slice(0, start) + textToInsert + currentScript.slice(end);
+      
+    handleScriptUpdate(newScript);
+    
+    // Reset selections after action
+    setSourceSelection('');
+    setEditorSelection(null);
+  };
+
   const processFile = async (file: File) => {
     if (file && (file.type === 'text/plain' || file.name.endsWith('.srt'))) {
       const reader = new FileReader();
@@ -72,7 +100,7 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
       };
       reader.readAsText(file);
     } else {
-      alert('Please upload a valid .txt or .srt file.');
+      showModal('Invalid File Type', 'Please upload a valid .txt or .srt file.');
     }
   };
 
@@ -124,13 +152,25 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
         
         <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full flex-1 overflow-y-auto lg:overflow-hidden pb-24 md:pb-6">
           <div className="flex flex-col lg:flex-row gap-6 h-full">
-            <div className="lg:w-3/5 flex flex-col">
+            <div className="lg:w-3/5 flex flex-col relative">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-medium text-slate-800">Script Editor</h3>
+                {sourceSelection && editorFocused && editorSelection && (
+                  <ContextualToolbar
+                    editorSelection={editorSelection}
+                    onAction={() => handleInsertIntoScript(sourceSelection)}
+                  />
+                )}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-h-0">
                 {project.script ? (
-                  <EditorPane initialContent={project.script} onTextSelect={setSelectedText} onScriptUpdate={handleScriptUpdate} />
+                  <EditorPane 
+                    initialContent={project.script} 
+                    onTextSelect={setSelectedText} 
+                    onScriptUpdate={handleScriptUpdate}
+                    onSelectionChange={setEditorSelection}
+                    onFocusChange={setEditorFocused}
+                  />
                 ) : TranscriptUploader}
               </div>
             </div>
@@ -146,15 +186,28 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
                 </div>
                <div className="flex-1 min-h-[500px] lg:min-h-0 pt-3">
                 {activeTab === 'chat' ? (
-                  <AIChatPane project={project} selectedText={selectedText} onHistoryUpdate={handleHistoryUpdate} />
+                  <AIChatPane 
+                    project={project} 
+                    selectedText={selectedText} 
+                    onHistoryUpdate={handleHistoryUpdate} 
+                    onSourceSelect={setSourceSelection}
+                    onShowModal={showModal}
+                  />
                 ) : (
-                  <AIToolsPane script={project.script || ''} onApplyChanges={handleScriptUpdate} />
+                  <AIToolsPane script={project.script || ''} onApplyChanges={handleScriptUpdate} onShowModal={showModal} />
                 )}
               </div>
             </div>
           </div>
         </div>
       </main>
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ isOpen: false, title: '', message: '' })}
+        title={modal.title}
+      >
+        <p>{modal.message}</p>
+      </Modal>
     </div>
   );
 };

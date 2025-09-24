@@ -7,21 +7,12 @@ const Chat: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        <AIMessage>
-            <p className="font-semibold mb-2">Hello!</p>
-            <p>How can I help you with your video script today? You can ask me to brainstorm ideas, write a hook, or even generate a full draft.</p>
-        </AIMessage>
-        <UserMessage>
-            <p>I'm making a tech review video for the new "Innovate X" phone. I need some ideas for a catchy intro.</p>
-        </UserMessage>
-         <AIMessage>
-            <p className="font-semibold mb-2">Great topic! Here are a few intro hooks for your "Innovate X" review:</p>
-            <ul className="list-disc list-inside space-y-1">
-                <li>"Is this the phone that finally makes your wallet obsolete? The Innovate X says yes, and here's why."</li>
-                <li>"They promised a revolution. Did Innovate X deliver? Let's find out."</li>
-                <li>"Forget everything you thought you knew about smartphones. The Innovate X is here to change the game."</li>
-            </ul>
-        </AIMessage>
+        {/* FIX: Pass content as `text` prop instead of children to match AIMessageProps. Converted JSX to markdown string. */}
+        <AIMessage text={"**Hello!**\n\nHow can I help you with your video script today? You can ask me to brainstorm ideas, write a hook, or even generate a full draft."} />
+        {/* FIX: Pass content as `text` prop instead of children to match UserMessageProps. */}
+        <UserMessage text={"I'm making a tech review video for the new \"Innovate X\" phone. I need some ideas for a catchy intro."} />
+        {/* FIX: Pass content as `text` prop instead of children to match AIMessageProps. Converted JSX to markdown string. */}
+         <AIMessage text={"**Great topic! Here are a few intro hooks for your \"Innovate X\" review:**\n\n- \"Is this the phone that finally makes your wallet obsolete? The Innovate X says yes, and here's why.\"\n- \"They promised a revolution. Did Innovate X deliver? Let's find out.\"\n- \"Forget everything you thought you knew about smartphones. The Innovate X is here to change the game.\""} />
       </div>
       <div className="p-4 border-t border-slate-200 bg-white">
         <div className="flex items-center space-x-2 mb-3 overflow-x-auto pb-2">

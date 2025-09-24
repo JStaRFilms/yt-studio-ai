@@ -4,6 +4,7 @@ import { getProject, addProject, updateProject, Project, ChatMessage } from '../
 import { startChatSession, generateScriptFromChat, ProjectData } from '../utils/gemini';
 import ProjectSidebar from '../components/ProjectSidebar';
 import SuggestionPill from '../components/SuggestionPill';
+import Modal from '../components/Modal';
 import { LightningIcon, ChatIcon } from '../components/icons';
 import UnifiedChatHistory from '../components/UnifiedChatHistory';
 
@@ -18,6 +19,11 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ projectId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '' });
+
+  const showModal = (title: string, message: string) => {
+    setModal({ isOpen: true, title, message });
+  };
 
   useEffect(() => {
     const loadProject = async () => {
@@ -93,7 +99,7 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ projectId }) => {
     } catch (error) {
         console.error('Error sending message:', error);
         setProject(prev => prev ? {...prev, chatHistory: currentHistory} : null);
-        alert('There was an error communicating with the AI. Please try again.');
+        showModal('AI Communication Error', 'There was an error communicating with the AI. Please try again.');
     } finally {
         setIsLoading(false);
     }
@@ -102,7 +108,7 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ projectId }) => {
   const handleGenerateProject = async () => {
     const history = project?.chatHistory || [];
     if (history.length < 2) {
-      alert('Please have a short conversation with the AI to generate a project.');
+      showModal('Conversation Too Short', 'Please have a short conversation with the AI to generate a project.');
       return;
     }
     setIsGenerating(true);
@@ -129,7 +135,7 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ projectId }) => {
       }
     } catch (error) {
       console.error('Failed to generate project:', error);
-      alert('There was an error generating the project from your conversation. Please try again.');
+      showModal('Generation Error', 'There was an error generating the project from your conversation. Please try again.');
       setIsGenerating(false);
     }
   };
@@ -188,6 +194,13 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ projectId }) => {
             </div>
         </div>
       </main>
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ isOpen: false, title: '', message: '' })}
+        title={modal.title}
+      >
+        <p>{modal.message}</p>
+      </Modal>
     </div>
   );
 };

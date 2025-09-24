@@ -6,9 +6,11 @@ interface EditorPaneProps {
   initialContent: string;
   onTextSelect: (text: string) => void;
   onScriptUpdate: (newContent: string) => Promise<void>;
+  onSelectionChange: (selection: { start: number; end: number } | null) => void;
+  onFocusChange: (isFocused: boolean) => void;
 }
 
-const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, onScriptUpdate }) => {
+const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, onScriptUpdate, onSelectionChange, onFocusChange }) => {
   const [content, setContent] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -32,6 +34,7 @@ const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, o
     const target = e.target as HTMLTextAreaElement;
     const selection = target.value.substring(target.selectionStart, target.selectionEnd);
     onTextSelect(selection.trim());
+    onSelectionChange({ start: target.selectionStart, end: target.selectionEnd });
   };
 
   const handleSave = async () => {
@@ -49,6 +52,12 @@ const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, o
       setSaveStatus('idle');
     }
   };
+  
+  const handleBlur = () => {
+      onFocusChange(false);
+      // A small delay allows a click on the contextual toolbar to register before we clear the selection
+      setTimeout(() => onSelectionChange(null), 100);
+  }
 
   const saveButtonContent = () => {
     switch (saveStatus) {
@@ -104,6 +113,8 @@ const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, o
           value={content}
           onChange={handleChange}
           onSelect={handleSelect}
+          onFocus={() => onFocusChange(true)}
+          onBlur={handleBlur}
           placeholder="Your script will appear here..."
           className="w-full h-full flex-1 p-4 overflow-y-auto resize-none bg-slate-50 focus:outline-none leading-relaxed"
           aria-label="Script editor"

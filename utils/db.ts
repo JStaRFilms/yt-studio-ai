@@ -1,6 +1,12 @@
 import { Content } from '@google/genai';
 
 export interface ChatMessage extends Content {
+  // FIX: Explicitly define `role` and `parts` on ChatMessage.
+  // The TypeScript compiler is failing to correctly infer these properties from
+  // the extended `Content` type from the `@google/genai` package in this project context.
+  // This change makes the properties explicit, resolving type errors across the application.
+  role: 'user' | 'model';
+  parts: { text: string; }[];
   timestamp: number;
   context: 'brainstorm' | 'assistant';
 }
@@ -69,10 +75,10 @@ export const initDB = (): Promise<IDBDatabase> => {
                 const assistantHistory = oldProject.chatHistories.assistant || [];
 
                 brainstormHistory.forEach((msg: Content) => {
-                  newChatHistory.push({ ...msg, context: 'brainstorm', timestamp: (timestamp += 1000) });
+                  newChatHistory.push({ ...(msg as any), context: 'brainstorm', timestamp: (timestamp += 1000) });
                 });
                 assistantHistory.forEach((msg: Content) => {
-                  newChatHistory.push({ ...msg, context: 'assistant', timestamp: (timestamp += 1000) });
+                  newChatHistory.push({ ...(msg as any), context: 'assistant', timestamp: (timestamp += 1000) });
                 });
 
                 newChatHistory.sort((a, b) => a.timestamp - b.timestamp);

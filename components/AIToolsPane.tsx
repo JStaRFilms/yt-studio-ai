@@ -6,9 +6,10 @@ import { parseAndSanitizeMarkdown } from '../utils/markdown';
 interface AIToolsPaneProps {
   script: string;
   onApplyChanges: (newScript: string) => void;
+  onShowModal: (title: string, message: string) => void;
 }
 
-const AIToolsPane: React.FC<AIToolsPaneProps> = ({ script, onApplyChanges }) => {
+const AIToolsPane: React.FC<AIToolsPaneProps> = ({ script, onApplyChanges, onShowModal }) => {
   const [cleanupStatus, setCleanupStatus] = useState<'idle' | 'loading' | 'complete'>('idle');
   const [cleanedScript, setCleanedScript] = useState('');
   const [originalScript, setOriginalScript] = useState('');
@@ -19,7 +20,7 @@ const AIToolsPane: React.FC<AIToolsPaneProps> = ({ script, onApplyChanges }) => 
 
   const handleAiEdit = async () => {
     if (!script || script.trim() === '') {
-      alert("Script is empty. There's nothing to clean up.");
+      onShowModal("Script is Empty", "There's nothing to clean up. Please add a script first.");
       return;
     }
     setOriginalScript(script);
@@ -33,7 +34,7 @@ const AIToolsPane: React.FC<AIToolsPaneProps> = ({ script, onApplyChanges }) => 
       console.error(error);
       setCleanupStatus('idle');
       setOriginalScript('');
-      alert('Failed to clean up script. Please try again.');
+      onShowModal('AI Error', 'Failed to clean up script. Please try again.');
     }
   };
 
@@ -55,7 +56,7 @@ const AIToolsPane: React.FC<AIToolsPaneProps> = ({ script, onApplyChanges }) => 
 
   const handleGeneratePackage = async () => {
     if (!script || script.trim() === '') {
-      alert("Script is empty. Cannot generate content package.");
+      onShowModal("Script is Empty", "Cannot generate a content package without a script.");
       return;
     }
     setPackageStatus('loading');
@@ -66,7 +67,7 @@ const AIToolsPane: React.FC<AIToolsPaneProps> = ({ script, onApplyChanges }) => 
     } catch (error) {
         console.error(error);
         setPackageStatus('idle');
-        alert('Failed to generate content package. Please try again.');
+        onShowModal('AI Error', 'Failed to generate content package. Please try again.');
     }
   };
 

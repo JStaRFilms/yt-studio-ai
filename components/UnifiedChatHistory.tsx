@@ -3,18 +3,27 @@ import { ChatMessage } from '../utils/db';
 import AIMessage from './AIMessage';
 import UserMessage from './UserMessage';
 import HistoryBookmark from './HistoryBookmark';
-import { parseAndSanitizeMarkdown } from '../utils/markdown';
 
 interface UnifiedChatHistoryProps {
   history: ChatMessage[];
   currentContext: 'brainstorm' | 'assistant';
   isLoading: boolean;
+  onTextSelect?: (text: string) => void;
 }
 
-const UnifiedChatHistory: React.FC<UnifiedChatHistoryProps> = ({ history, currentContext, isLoading }) => {
-  const renderedElements: JSX.Element[] = [];
+const UnifiedChatHistory: React.FC<UnifiedChatHistoryProps> = ({ history, currentContext, isLoading, onTextSelect }) => {
+  const renderedElements: React.ReactElement[] = [];
   let lastContext = currentContext;
   let historySlice: ChatMessage[] = [];
+
+  const handleMouseUp = () => {
+    if (onTextSelect) {
+      const selection = window.getSelection()?.toString().trim() ?? '';
+      if (selection) {
+        onTextSelect(selection);
+      }
+    }
+  };
 
   history.forEach((message, index) => {
     // If context is the same as the current view, render the message.
@@ -32,19 +41,18 @@ const UnifiedChatHistory: React.FC<UnifiedChatHistoryProps> = ({ history, curren
       }
       
       const key = `msg-${message.timestamp}-${index}`;
-      const sanitizedHtml = parseAndSanitizeMarkdown(message.parts.map(p => p.text).join('\n'));
+      const messageText = message.parts.map(p => p.text).join('\n');
 
       if (message.role === 'user') {
         renderedElements.push(
-          <UserMessage key={key}>
-            <div className="prose prose-sm prose-invert max-w-none markdown-content" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
-          </UserMessage>
+          <UserMessage key={key} text={messageText} />
         );
       } else {
         renderedElements.push(
-          <AIMessage key={key}>
-            <div className="prose prose-sm max-w-none markdown-content" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
-          </AIMessage>
+          <AIMessage
+            key={key}
+            text={messageText}
+          />
         );
       }
       lastContext = message.context;
@@ -79,16 +87,16 @@ const UnifiedChatHistory: React.FC<UnifiedChatHistoryProps> = ({ history, curren
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onMouseUp={handleMouseUp}>
       {renderedElements}
       {isLoading && (
-        <AIMessage>
+        <div className="p-4 bg-slate-100 rounded-lg max-w-prose">
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse"></div>
             <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
             <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
           </div>
-        </AIMessage>
+        </div>
       )}
     </div>
   );

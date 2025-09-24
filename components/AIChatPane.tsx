@@ -10,9 +10,11 @@ interface AIChatPaneProps {
   selectedText: string;
   project: Project;
   onHistoryUpdate: (newHistory: ChatMessage[]) => Promise<void>;
+  onSourceSelect: (text: string) => void;
+  onShowModal: (title: string, message: string) => void;
 }
 
-const AIChatPane: React.FC<AIChatPaneProps> = ({ selectedText, project, onHistoryUpdate }) => {
+const AIChatPane: React.FC<AIChatPaneProps> = ({ selectedText, project, onHistoryUpdate, onSourceSelect, onShowModal }) => {
   const [chat, setChat] = useState<Chat | null>(null);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -77,7 +79,7 @@ const AIChatPane: React.FC<AIChatPaneProps> = ({ selectedText, project, onHistor
         
     } catch (error) {
         console.error('Error sending message to AI:', error);
-        alert('There was an error communicating with the AI. Please try again.');
+        onShowModal('AI Communication Error', 'There was an error communicating with the AI. Please try again.');
         await onHistoryUpdate(currentHistory); // Revert
     } finally {
         setIsLoading(false);
@@ -104,7 +106,12 @@ const AIChatPane: React.FC<AIChatPaneProps> = ({ selectedText, project, onHistor
                 <p className="text-sm mt-1">Select text in the editor or ask me anything about your script.</p>
             </div>
         )}
-        <UnifiedChatHistory history={project.chatHistory || []} currentContext="assistant" isLoading={isLoading} />
+        <UnifiedChatHistory 
+          history={project.chatHistory || []} 
+          currentContext="assistant" 
+          isLoading={isLoading}
+          onTextSelect={onSourceSelect}
+        />
       </div>
 
       <div className="p-4 border-t border-slate-200 bg-white">
