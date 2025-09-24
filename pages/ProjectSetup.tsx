@@ -2,6 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import ProjectSidebar from '../components/ProjectSidebar';
 import { CheckIcon } from '../components/icons';
 import { addProject } from '../utils/db';
+import { startChatSession, generateScriptFromChat } from '../utils/gemini';
+import type { Chat } from '@google/genai';
+
+interface Message {
+    id: number;
+    type: 'ai' | 'user';
+    content: React.ReactNode;
+    suggestions?: { text: string; suggestion: string }[];
+    isLoading?: boolean;
+}
 
 const SuggestionPill: React.FC<{ text: string, suggestion: string, onSelect: (suggestion: string) => void }> = ({ text, suggestion, onSelect }) => (
     <button
@@ -12,15 +22,17 @@ const SuggestionPill: React.FC<{ text: string, suggestion: string, onSelect: (su
     </button>
 );
 
-
 const ProjectSetup: React.FC = () => {
-    const [messages, setMessages] = useState<any[]>([]);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [isConverting, setIsConverting] = useState(false);
+    const [chatSession, setChatSession] = useState<Chat | null>(null);
+
     const chatEndRef = useRef<HTMLDivElement>(null);
     const messageCounter = useRef(0);
 
     useEffect(() => {
+        setChatSession(startChatSession());
         setMessages([
             {
                 id: messageCounter.current++,
@@ -28,7 +40,7 @@ const ProjectSetup: React.FC = () => {
                 content: (
                     <>
                         <p className="font-medium">Hi there! I'm your video brainstorming assistant. 👋</p>
-                        <p className="mt-2 text-sm">Let's create something great together. To get started:</p>
+                        <p className="mt-2 text-sm">Let's create something great together. What's on your mind?</p>
                     </>
                 ),
                 suggestions: [
@@ -44,60 +56,57 @@ const ProjectSetup: React.FC = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSendMessage = (text: string) => {
+    const handleSendMessage = async (text: string) => {
         const messageText = text.trim();
-        if (!messageText) return;
+        if (!messageText || !chatSession) return;
 
-        setMessages(prev => [...prev, { id: messageCounter.current++, type: 'user', content: <p>{messageText}</p> }]);
+        const userMessage: Message = { id: messageCounter.current++, type: 'user', content: <p>{messageText}</p> };
+        setMessages(prev => [...prev, userMessage]);
         setInputValue('');
-        
-        // Simulate AI response
-        setTimeout(() => {
-            let aiResponse: any = {};
-            if (messageText.toLowerCase().includes('sustainable fashion')) {
-                aiResponse = {
-                    id: messageCounter.current++,
-                    type: 'ai',
-                    content: (
-                        <>
-                            <p className="font-medium">Great topic! Here are 5 compelling angles for your sustainable fashion video:</p>
-                            <ol className="list-decimal list-inside mt-2 space-y-1.5 text-sm pl-1">
-                                <li><strong>Thrift Flip Challenge:</strong> Transform thrifted clothes into trendy outfits (show before/after)</li>
-                                <li><strong>Brand Transparency:</strong> How to spot greenwashing vs. truly ethical brands</li>
-                                <li><strong>30-Wear Challenge:</strong> Building a capsule wardrobe that lasts a month</li>
-                                <li><strong>DIY Upcycling:</strong> Turn old t-shirts into tote bags in 5 minutes</li>
-                                <li><strong>Cost Breakdown:</strong> Why sustainable fashion costs more (and when it's worth it)</li>
-                            </ol>
-                            <p className="mt-3">Which angle interests you most? I can help develop it further!</p>
-                        </>
-                    )
-                };
-            } else {
-                 aiResponse = {
-                    id: messageCounter.current++,
-                    type: 'ai',
-                    content: (
-                        <>
-                            <p className="font-medium">That's an interesting idea! How about we explore these points:</p>
-                            <ul className="list-disc list-inside mt-2 space-y-1.5 text-sm pl-1">
-                                <li>Identifying the target audience.</li>
-                                <li>Structuring the video (Intro, Main Points, Outro).</li>
-                                <li>Creating a compelling call to action.</li>
-                            </ul>
-                        </>
-                    )
-                };
+
+        const loadingMessageId = messageCounter.current++;
+        const loadingMessage: Message = { id: loadingMessageId, type: 'ai', content: null, isLoading: true };
+        setMessages(prev => [...prev, loadingMessage]);
+
+        try {
+            const responseStream = await chatSession.sendMessageStream({ message: messageText });
+            for await (const chunk of responseStream) {
+                const chunkText = chunk.text;
+                setMessages(prev => prev.map(msg =>
+                    msg.id === loadingMessageId
+                        ? { ...msg, content: <p>{chunkText}</p>, isLoading: false }
+                        : msg
+                ));
             }
-            setMessages(prev => [...prev, aiResponse]);
-        }, 1000);
+        } catch (error) {
+            console.error("Chat error:", error);
+            setMessages(prev => prev.map(msg =>
+                msg.id === loadingMessageId
+                    ? { ...msg, content: <p className="text-red-500">Sorry, I encountered an error. Please try again.</p>, isLoading: false }
+                    : msg
+            ));
+        }
     };
-    
+
+    // Fix: Replace usage of private property 'history' with the public 'getHistory()' method.
     const handleConvertToScript = async () => {
+        if (!chatSession) {
+            alert("Let's brainstorm a bit first before creating the script!");
+            return;
+        }
         setIsConverting(true);
         try {
+            const history = await chatSession.getHistory();
+            if (history.length < 1) {
+                alert("Let's brainstorm a bit first before creating the script!");
+                setIsConverting(false);
+                return;
+            }
+
+            const projectData = await generateScriptFromChat(history);
             const newProjectId = await addProject({
-                title: 'Untitled Project',
-                script: 'This is a new project. Upload a transcript or start writing!',
+                title: projectData.title || 'Untitled Project',
+                script: projectData.script || 'No script generated.',
             });
             window.location.href = `/project/${newProjectId}`;
         } catch (error) {
@@ -108,7 +117,6 @@ const ProjectSetup: React.FC = () => {
     };
 
     const handleSuggestionSelect = (suggestion: string) => {
-        setInputValue(suggestion);
         handleSendMessage(suggestion);
     };
 
@@ -125,12 +133,6 @@ const ProjectSetup: React.FC = () => {
                                 <span className="text-xs text-slate-500">Session active</span>
                             </div>
                         </div>
-                        <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-                            <button onClick={() => window.location.reload()} className="flex items-center px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                                New Session
-                            </button>
-                        </div>
                     </div>
                 </header>
 
@@ -138,10 +140,17 @@ const ProjectSetup: React.FC = () => {
                     {messages.map(msg => (
                         <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[85%] rounded-2xl p-3.5 ${msg.type === 'ai' ? 'bg-indigo-50 text-slate-800' : 'bg-slate-100 text-slate-800'}`}>
+                                {msg.isLoading && (
+                                    <div className="flex items-center space-x-1.5">
+                                        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                                        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                                        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                                    </div>
+                                )}
                                 {msg.content}
                                 {msg.suggestions && (
                                     <div className="mt-3 flex flex-wrap gap-2">
-                                        {msg.suggestions.map((s: any) => <SuggestionPill key={s.text} text={s.text} suggestion={s.suggestion} onSelect={handleSuggestionSelect} />)}
+                                        {msg.suggestions.map((s) => <SuggestionPill key={s.text} text={s.text} suggestion={s.suggestion} onSelect={handleSuggestionSelect} />)}
                                     </div>
                                 )}
                             </div>
@@ -170,24 +179,19 @@ const ProjectSetup: React.FC = () => {
                     {isConverting ? (
                         <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-center">
                             <svg className="animate-spin h-6 w-6 mx-auto text-indigo-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            <p className="text-slate-700 font-medium">Converting to script...</p>
-                            <p className="text-sm text-slate-500 mt-1">Preparing your outline for editing</p>
+                            <p className="text-slate-700 font-medium">Generating title & script...</p>
+                            <p className="text-sm text-slate-500 mt-1">Preparing your project for editing</p>
                         </div>
                     ) : (
                         <div className="bg-white border border-slate-200 rounded-xl p-4">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="font-medium text-slate-800">Ready to start scripting?</h3>
-                                    <p className="text-sm text-slate-600 mt-1">Your brainstorm session has created a solid foundation</p>
+                                    <p className="text-sm text-slate-600 mt-1">Convert your brainstorm session into a project.</p>
                                 </div>
                                 <button onClick={handleConvertToScript} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-medium text-sm transition whitespace-nowrap">
                                     Convert to Script
                                 </button>
-                            </div>
-                            <div className="mt-3 pl-1 space-y-1.5 text-sm">
-                                <p className="flex items-start"><CheckIcon className="h-4 w-4 text-indigo-600 mt-0.5 mr-1.5 flex-shrink-0" /><span>Video angles outlined</span></p>
-                                <p className="flex items-start"><CheckIcon className="h-4 w-4 text-indigo-600 mt-0.5 mr-1.5 flex-shrink-0" /><span>Core concepts detailed</span></p>
-                                <p className="flex items-start"><CheckIcon className="h-4 w-4 text-indigo-600 mt-0.5 mr-1.5 flex-shrink-0" /><span>Basic script outline created</span></p>
                             </div>
                         </div>
                     )}

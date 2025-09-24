@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Chat, Content } from "@google/genai";
 
 // Per guidelines, initialize with a named apiKey parameter from process.env.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -11,6 +11,27 @@ export interface ContentPackage {
     description: string;
     tags: string[];
 }
+
+/**
+ * Interface for the structured project data generated from a chat session.
+ */
+export interface ProjectData {
+    title: string;
+    script: string;
+}
+
+/**
+ * Starts a new, stateful chat session for brainstorming.
+ * @returns A Chat instance.
+ */
+export const startChatSession = (): Chat => {
+    return ai.chats.create({
+        model: 'gemini-2.5-flash',
+        config: {
+            systemInstruction: "You are a creative partner and brainstorming assistant for a YouTube content creator. Your goal is to help them brainstorm and outline a video script. Be encouraging, ask clarifying questions, and provide structured ideas like lists and outlines. Keep your responses concise and helpful.",
+        },
+    });
+};
 
 /**
  * Rewrites a given piece of text based on a user's instruction using the Gemini API.
@@ -137,5 +158,48 @@ ${script}
     } catch (error) {
         console.error("Error generating content package:", error);
         throw new Error("Failed to generate content package.");
+    }
+};
+
+/**
+ * Generates a project title and script from a chat history.
+ * @param history The chat history.
+ * @returns An object containing the generated title and script.
+ */
+export const generateScriptFromChat = async (history: Content[]): Promise<ProjectData> => {
+    const finalPrompt = "Based on our entire conversation, please generate a project title and a concise, well-structured script outline. Respond in JSON format with two keys: 'title' and 'script'. The 'script' should be only the script text, ready for an editor.";
+    
+    // The history already contains role information. We add the final user prompt.
+    const contents: Content[] = [...history, { role: 'user', parts: [{ text: finalPrompt }] }];
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: contents,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        title: {
+                            type: Type.STRING,
+                            description: "A compelling, concise title for the video project."
+                        },
+                        script: {
+                            type: Type.STRING,
+                            description: "A well-structured script outline or starting script."
+                        }
+                    },
+                    required: ["title", "script"]
+                }
+            }
+        });
+
+        const jsonText = response.text.trim();
+        return JSON.parse(jsonText) as ProjectData;
+
+    } catch (error) {
+        console.error("Error generating script from chat:", error);
+        throw new Error("Failed to generate final script.");
     }
 };

@@ -29,6 +29,7 @@
 *   **Script Editor:** Decided to use a styled `<textarea>` for the initial script editor implementation. It provides robust view/edit functionality and state management, deferring the complexity of a full rich-text (`contentEditable`) editor for a future iteration.
 *   **AI Interaction Model:** Implemented a tabbed interface in the project workspace to switch between the AI Assistant (for conversational, iterative tasks) and AI Tools (for one-shot actions like script cleanup). This provides dedicated spaces for different types of AI interaction.
 *   **Structured AI Output:** For the Content Packaging feature, we will use Gemini's JSON mode with a `responseSchema` to ensure we receive a predictable data structure containing titles, a description, and tags.
+*   **Ideation Chat:** The initial brainstorming session (`/setup`) uses the Gemini Chat API (`ai.chats.create`) to maintain a stateful, context-aware conversation. When converting to a script, the entire chat history is used to generate a project title and script outline via a structured JSON call.
 
 ## 4. Development Plan & Progress
 
@@ -49,6 +50,7 @@
 - [x] Implement FR-004: Implement a script editor module to allow users to view and modify their transcript.
 - [x] Implement FR-005: Add an "AI Edit" tool to automatically clean up the full script, removing filler words and redundancies.
 - [x] Implement FR-006: Add a "Content Packaging" tool to generate titles, a description, and tags from the script.
+- [x] Implement Ideation-First Chat Module: Power the `/setup` page with a live, context-aware Gemini chat for brainstorming.
 
 **Phase 3: Polish & Refinement**
 - [ ] Conduct a full accessibility audit (A11y).
@@ -64,6 +66,7 @@
 - [x] Integrate Gemini for image generation in the AI Assistant.
 - [x] Integrate Gemini for automated script cleanup.
 - [x] Integrate Gemini for content packaging (titles, description, tags).
+- [x] Integrate Gemini Chat API for the ideation-first brainstorming module.
 - [ ] Power the multi-step `ProcessingWorkflow` page with Gemini.
 - [ ] Power the `B-Roll Generator` page with the Gemini API.
 - [ ] Power the `Thumbnail Generator` page with the Gemini API.
