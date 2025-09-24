@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { startChatSession } from '../utils/gemini';
 import ChatHistoryViewer from './ChatHistoryViewer';
+import { parseAndSanitizeMarkdown } from '../utils/markdown';
 import type { Chat, Content } from '@google/genai';
 
 interface Message {
     id: number;
     type: 'ai' | 'user';
-    content: React.ReactNode;
+    rawContent: string;
     suggestions?: string[];
 }
 
@@ -31,14 +32,13 @@ const AIChatPane: React.FC<AIChatPaneProps> = ({ selectedText, assistantHistory 
     const messageCounter = useRef(0);
     
     useEffect(() => {
-        // AI gets context from brainstorm, but conversation is based on assistant history
         const session = startChatSession(assistantHistory, brainstormHistory);
         setChatSession(session);
         
         const historyMessages = assistantHistory.map(entry => ({
             id: messageCounter.current++,
             type: entry.role === 'user' ? 'user' : 'ai',
-            content: <p>{entry.parts.map(p => p.text).join('')}</p>
+            rawContent: entry.parts.map(p => p.text).join(''),
         }) as Message);
 
         if (historyMessages.length === 0) {
@@ -46,7 +46,7 @@ const AIChatPane: React.FC<AIChatPaneProps> = ({ selectedText, assistantHistory 
                 {
                     id: messageCounter.current++,
                     type: 'ai',
-                    content: <p>Hi! I'm your script assistant. I can help you write, rewrite, or improve any part of your script. Try selecting text in the editor and asking me to improve it.</p>,
+                    rawContent: "Hi! I'm your script assistant. I can help you write, rewrite, or improve any part of your script. Try selecting text in the editor and asking me to improve it.",
                     suggestions: ["Make this more engaging", "Shorten this section", "/generate image of..."]
                 }
             ]);
@@ -63,14 +63,14 @@ const AIChatPane: React.FC<AIChatPaneProps> = ({ selectedText, assistantHistory 
         const messageText = text.trim();
         if (!messageText || !chatSession) return;
         
-        const fullPrompt = selectedText ? `${messageText}\n\n--- Selected Text ---\n${selectedText}` : messageText;
+        const fullPrompt = selectedText ? `Instruction: "${messageText}"\n\n--- Selected Text ---\n"${selectedText}"` : messageText;
 
-        const userMessage: Message = { id: messageCounter.current++, type: 'user', content: <p>{messageText}</p> };
+        const userMessage: Message = { id: messageCounter.current++, type: 'user', rawContent: messageText };
         setMessages(prev => [...prev, userMessage]);
         setInputValue('');
         
         const loadingMessageId = messageCounter.current++;
-        const loadingMessage: Message = { id: loadingMessageId, type: 'ai', content: <div className="flex items-center space-x-1.5"><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div></div> };
+        const loadingMessage: Message = { id: loadingMessageId, type: 'ai', rawContent: '...' };
         setMessages(prev => [...prev, loadingMessage]);
 
         try {
@@ -79,14 +79,14 @@ const AIChatPane: React.FC<AIChatPaneProps> = ({ selectedText, assistantHistory 
             for await (const chunk of responseStream) {
                 fullResponse += chunk.text;
                 setMessages(prev => prev.map(msg => 
-                    msg.id === loadingMessageId ? { ...msg, content: <p className="whitespace-pre-wrap">{fullResponse}</p> } : msg
+                    msg.id === loadingMessageId ? { ...msg, rawContent: fullResponse } : msg
                 ));
             }
             const newHistory = await chatSession.getHistory();
             await onAssistantHistoryUpdate(newHistory);
         } catch (error) {
             console.error("Chat error:", error);
-            setMessages(prev => prev.map(msg => msg.id === loadingMessageId ? { ...msg, content: <p className="text-red-600">Sorry, I encountered an error. Please try again.</p> } : msg));
+            setMessages(prev => prev.map(msg => msg.id === loadingMessageId ? { ...msg, rawContent: "**Sorry, I encountered an error.** Please try again." } : msg));
         }
     };
 
@@ -108,7 +108,11 @@ const AIChatPane: React.FC<AIChatPaneProps> = ({ selectedText, assistantHistory 
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] rounded-2xl p-3.5 ${msg.type === 'user' ? 'bg-slate-50 text-slate-800' : 'bg-indigo-50 text-slate-800'}`}>
-                           {msg.content}
+                           {msg.rawContent === '...' ? (
+                               <div className="flex items-center space-x-1.5"><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div></div>
+                           ) : (
+                               <div className="markdown-content" dangerouslySetInnerHTML={{ __html: parseAndSanitizeMarkdown(msg.rawContent) }} />
+                           )}
                            {msg.suggestions && (
                                 <div className="mt-2 flex flex-wrap gap-1.5">
                                    {msg.suggestions.map((s, i) => <SuggestionPill key={i} text={s} onSelect={handleSuggestionClick} />)}

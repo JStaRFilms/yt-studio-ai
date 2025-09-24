@@ -3,12 +3,13 @@ import ProjectSidebar from '../components/ProjectSidebar';
 import { addProject, getProject, updateProject, Project } from '../utils/db';
 import { startChatSession, generateScriptFromChat } from '../utils/gemini';
 import ChatHistoryViewer from '../components/ChatHistoryViewer';
+import { parseAndSanitizeMarkdown } from '../utils/markdown';
 import type { Chat, Content } from '@google/genai';
 
 interface Message {
     id: number;
     type: 'ai' | 'user';
-    content: React.ReactNode;
+    rawContent: string;
     suggestions?: { text: string; suggestion: string }[];
 }
 
@@ -48,7 +49,7 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ projectId }) => {
                     const historyMessages = brainstormHistory.map(entry => ({
                         id: messageCounter.current++,
                         type: entry.role === 'user' ? 'user' : 'ai',
-                        content: <p>{entry.parts.map(p => p.text).join('')}</p>
+                        rawContent: entry.parts.map(p => p.text).join('')
                     }) as Message);
                     setMessages(historyMessages);
                 } else {
@@ -56,16 +57,12 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ projectId }) => {
                 }
             } else {
                 setChatSession(startChatSession());
+                const welcomeMessage = `**Hi there! I'm your video brainstorming assistant. 👋**\n\nLet's create something great together. What's on your mind?`;
                 setMessages([
                     {
                         id: messageCounter.current++,
                         type: 'ai',
-                        content: (
-                            <>
-                                <p className="font-medium">Hi there! I'm your video brainstorming assistant. 👋</p>
-                                <p className="mt-2 text-sm">Let's create something great together. What's on your mind?</p>
-                            </>
-                        ),
+                        rawContent: welcomeMessage,
                         suggestions: [
                             { text: 'Sustainable fashion ideas', suggestion: 'What video topics should I cover about sustainable fashion?' },
                             { text: 'Tokyo travel vlog outline', suggestion: 'Help me outline a travel vlog for Tokyo' },
@@ -86,38 +83,29 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ projectId }) => {
         const messageText = text.trim();
         if (!messageText || !chatSession) return;
 
-        const userMessage: Message = { id: messageCounter.current++, type: 'user', content: <p>{messageText}</p> };
+        const userMessage: Message = { id: messageCounter.current++, type: 'user', rawContent: messageText };
         setMessages(prev => [...prev, userMessage]);
         setInputValue('');
 
         const loadingMessageId = messageCounter.current++;
-        const loadingMessage: Message = { id: loadingMessageId, type: 'ai', content: <div className="flex items-center space-x-1.5"><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div></div> };
+        const loadingMessage: Message = { id: loadingMessageId, type: 'ai', rawContent: '...' };
         setMessages(prev => [...prev, loadingMessage]);
 
         try {
             const responseStream = await chatSession.sendMessageStream({ message: messageText });
             let fullResponse = "";
-            let finalMessageContent: React.ReactNode | null = null;
             
-            const streamReader = async () => {
-                for await (const chunk of responseStream) {
-                    fullResponse += chunk.text;
-                    setMessages(prev => prev.map(msg =>
-                        msg.id === loadingMessageId
-                            ? { ...msg, content: <p className="whitespace-pre-wrap">{fullResponse}</p> }
-                            : msg
-                    ));
-                }
-                finalMessageContent = <p className="whitespace-pre-wrap">{fullResponse}</p>;
-            };
-    
-            await streamReader();
-    
-            setMessages(prev => prev.map(msg => msg.id === loadingMessageId ? { ...msg, content: finalMessageContent } : msg));
+            for await (const chunk of responseStream) {
+                fullResponse += chunk.text;
+                setMessages(prev => prev.map(msg =>
+                    msg.id === loadingMessageId
+                        ? { ...msg, rawContent: fullResponse }
+                        : msg
+                ));
+            }
     
             if (projectId) {
                 const newHistory = await chatSession.getHistory();
-                // FIX: Property 'assistant' was missing when updating chatHistories. Preserving existing assistant history.
                 await updateProject(projectId, { chatHistories: { brainstorm: newHistory, assistant: project?.chatHistories?.assistant || [] } });
             }
 
@@ -125,7 +113,7 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ projectId }) => {
             console.error("Chat error:", error);
             setMessages(prev => prev.map(msg =>
                 msg.id === loadingMessageId
-                    ? { ...msg, content: <p className="text-red-500">Sorry, I encountered an error. Please try again.</p> }
+                    ? { ...msg, rawContent: "**Sorry, I encountered an error.** Please try again." }
                     : msg
             ));
         }
@@ -185,7 +173,11 @@ const ProjectSetup: React.FC<ProjectSetupProps> = ({ projectId }) => {
                     {messages.map(msg => (
                         <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[85%] rounded-2xl p-3.5 ${msg.type === 'ai' ? 'bg-indigo-50 text-slate-800' : 'bg-slate-100 text-slate-800'}`}>
-                                {msg.content}
+                                {msg.rawContent === '...' ? (
+                                    <div className="flex items-center space-x-1.5"><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div><div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div></div>
+                                ) : (
+                                    <div className="markdown-content" dangerouslySetInnerHTML={{ __html: parseAndSanitizeMarkdown(msg.rawContent) }} />
+                                )}
                                 {msg.suggestions && (
                                     <div className="mt-3 flex flex-wrap gap-2">
                                         {msg.suggestions.map((s) => <SuggestionPill key={s.text} text={s.text} suggestion={s.suggestion} onSelect={handleSendMessage} />)}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LightningIcon } from './icons';
 import { generateCleanup, generateContentPackage, ContentPackage } from '../utils/gemini';
+import { parseAndSanitizeMarkdown } from '../utils/markdown';
 
 interface AIToolsPaneProps {
   script: string;
@@ -112,9 +113,10 @@ const AIToolsPane: React.FC<AIToolsPaneProps> = ({ script, onApplyChanges }) => 
                   {view === 'cleaned' ? 'Show Original' : 'Show Cleaned Version'}
                 </button>
               </div>
-              <p className="text-slate-700 text-sm leading-relaxed mb-3 max-h-40 overflow-y-auto border border-slate-200 bg-white rounded-md p-2 font-mono">
-                {view === 'cleaned' ? cleanedScript : originalScript}
-              </p>
+              <div
+                className="text-slate-700 text-sm leading-relaxed mb-3 max-h-40 overflow-y-auto border border-slate-200 bg-white rounded-md p-2 font-mono markdown-content"
+                dangerouslySetInnerHTML={{ __html: parseAndSanitizeMarkdown(view === 'cleaned' ? cleanedScript : originalScript) }}
+              />
               <div className="flex space-x-2 mt-4">
                 <button
                   onClick={handleApplyCleanup}
@@ -166,7 +168,7 @@ const AIToolsPane: React.FC<AIToolsPaneProps> = ({ script, onApplyChanges }) => 
                     
                     <div className="mb-3">
                         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1 font-semibold">Description</p>
-                        <p className="text-slate-700">{contentPackage.description}</p>
+                        <div className="text-slate-700 markdown-content" dangerouslySetInnerHTML={{ __html: parseAndSanitizeMarkdown(contentPackage.description) }} />
                     </div>
                     
                     <div>
