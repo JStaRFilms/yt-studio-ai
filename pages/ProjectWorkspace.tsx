@@ -26,7 +26,6 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
         if (fetchedProject) {
           setProject(fetchedProject);
         } else {
-          // Handle project not found, maybe redirect or show an error
           console.error(`Project with ID ${projectId} not found.`);
         }
       } catch (error) {
@@ -37,6 +36,19 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
     };
     fetchProject();
   }, [projectId]);
+
+  const handleScriptSave = async (newScript: string) => {
+    if (project) {
+        try {
+            await updateProjectScript(project.id!, newScript);
+            setProject(prev => prev ? { ...prev, script: newScript, updatedAt: new Date() } : null);
+        } catch (error) {
+            console.error("Failed to save script:", error);
+            // Re-throw to allow the child component to handle UI feedback
+            throw error;
+        }
+    }
+  };
 
   const processFile = async (file: File) => {
     if (file && (file.type === 'text/plain' || file.name.endsWith('.srt'))) {
@@ -130,7 +142,15 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
                 <h3 className="font-medium text-slate-800">Script Editor</h3>
               </div>
               <div className="flex-1">
-                {project.script ? <EditorPane content={project.script} onTextSelect={handleTextSelection} /> : TranscriptUploader}
+                {project.script ? (
+                  <EditorPane 
+                    initialContent={project.script} 
+                    onTextSelect={handleTextSelection}
+                    onSave={handleScriptSave}
+                  />
+                ) : (
+                  TranscriptUploader
+                )}
               </div>
             </div>
 

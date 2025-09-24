@@ -1,56 +1,100 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
+import { CheckIcon } from './icons';
 
 interface EditorPaneProps {
-  content: string;
+  initialContent: string;
   onTextSelect: (text: string) => void;
+  onSave: (newContent: string) => Promise<void>;
 }
 
-const EditorPane: React.FC<EditorPaneProps> = ({ content, onTextSelect }) => {
-  const paragraphs = useMemo(() => content.split('\n').filter(p => p.trim() !== ''), [content]);
-  
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, onSave }) => {
+  const [content, setContent] = useState(initialContent);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
-  const handleSelect = useCallback((index: number) => {
-    setSelectedIndex(index);
-  }, []);
-  
   useEffect(() => {
-    if (selectedIndex !== null && paragraphs[selectedIndex]) {
-      onTextSelect(paragraphs[selectedIndex]);
-    } else {
-      onTextSelect('');
+    setContent(initialContent);
+    setSaveStatus('idle');
+  }, [initialContent]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContent(e.target.value);
+    if (saveStatus === 'saved') {
+      setSaveStatus('idle');
     }
-  }, [selectedIndex, onTextSelect, paragraphs]);
+  };
 
-  useEffect(() => {
-    setSelectedIndex(null);
-  }, [content]);
+  const handleSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+    const target = e.target as HTMLTextAreaElement;
+    const selection = target.value.substring(target.selectionStart, target.selectionEnd);
+    onTextSelect(selection.trim());
+  };
+
+  const handleSave = async () => {
+    setSaveStatus('saving');
+    try {
+      await onSave(content);
+      setSaveStatus('saved');
+      setTimeout(() => {
+        // Only revert to idle if it's still 'saved', to avoid race conditions
+        if (saveStatus === 'saved') {
+            setSaveStatus('idle');
+        }
+      }, 2000);
+    } catch (error) {
+      console.error("Save failed:", error);
+      alert("Failed to save script.");
+      setSaveStatus('idle');
+    }
+  };
+
+  const saveButtonContent = () => {
+    switch (saveStatus) {
+      case 'saving':
+        return (
+          <>
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Saving...
+          </>
+        );
+      case 'saved':
+        return (
+          <>
+            <CheckIcon className="-ml-1 mr-2 h-4 w-4" />
+            Saved
+          </>
+        );
+      default:
+        return 'Save';
+    }
+  };
 
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden h-full flex flex-col">
-      <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-white">
-        <div className="flex space-x-1">
-          {/* Editor tools can be added here */}
-        </div>
-        <div className="text-xs text-slate-500">{`${content.split(' ').length} words`}</div>
+      <div className="p-2 border-b border-slate-200 flex justify-between items-center bg-white">
+        <span className="text-xs text-slate-500 px-2">{content.split(/\s+/).filter(Boolean).length} words</span>
+        <button
+          onClick={handleSave}
+          disabled={saveStatus === 'saving'}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md flex items-center transition-colors ${
+            saveStatus === 'saved'
+              ? 'bg-green-100 text-green-800'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-indigo-400'
+          }`}
+        >
+          {saveButtonContent()}
+        </button>
       </div>
-      <div className="p-4 overflow-y-auto flex-1" style={{ minHeight: '400px' }}>
-        <div className="prose max-w-none">
-          {paragraphs.length > 0 ? (
-            paragraphs.map((p, index) => (
-             <p 
-              key={index} 
-              onClick={() => handleSelect(index)}
-              className={`mb-4 cursor-pointer transition-colors rounded p-2 ${selectedIndex === index ? 'bg-amber-100/50 ring-1 ring-amber-300' : 'hover:bg-slate-100'}`}
-             >
-              {p}
-            </p>
-            ))
-          ) : (
-            <p className="text-slate-500 italic">No content to display.</p>
-          )}
-        </div>
-      </div>
+      <textarea
+        value={content}
+        onChange={handleChange}
+        onSelect={handleSelect}
+        placeholder="Your script will appear here..."
+        className="w-full h-full flex-1 p-4 overflow-y-auto resize-none bg-slate-50 focus:outline-none leading-relaxed"
+        aria-label="Script editor"
+      />
     </div>
   );
 };

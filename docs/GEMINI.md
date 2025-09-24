@@ -26,6 +26,7 @@
 *   **Guiding Principle:** Prioritize a clean, intuitive, and highly functional user interface that makes complex AI interactions feel simple and natural.
 *   **Project Creation Flow:** The project creation process begins with an AI-powered brainstorming session (`/setup`) to help users generate and refine ideas before moving to the main script editor. This prioritizes ideation upfront.
 *   **Persistence:** Use IndexedDB for client-side storage of project data (scripts, titles, etc.) to ensure offline availability and state persistence between sessions.
+*   **Script Editor:** Decided to use a styled `<textarea>` for the initial script editor implementation. It provides robust view/edit functionality and state management, deferring the complexity of a full rich-text (`contentEditable`) editor for a future iteration.
 
 ## 4. Development Plan & Progress
 
@@ -43,6 +44,7 @@
 - [x] Convert `mockups/project-id-b-roll.html`, `project-id-thumbnails.html`, and `ProcessingWorkflowpage.html`.
 - [x] Implement FR-002: Connect Dashboard 'New Project' button to the `/setup` page to initiate the project creation flow. All dashboard and sidebar navigation is now functional.
 - [x] Implement FR-003: Add a transcript upload feature (`.txt`, `.srt`) to the `ProjectWorkspace` page for new projects. The in-project navigation is now functional.
+- [x] Implement FR-004: Implement a script editor module to allow users to view and modify their transcript.
 
 **Phase 3: Polish & Refinement**
 - [ ] Conduct a full accessibility audit (A11y).
