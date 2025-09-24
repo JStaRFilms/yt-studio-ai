@@ -58,3 +58,24 @@ export const generateImage = async (prompt: string): Promise<string> => {
         throw new Error("Failed to generate image. Please check your API key and the prompt.");
     }
 };
+
+/**
+ * Cleans up a script by removing filler words and redundancies.
+ * @param script - The full script to clean up.
+ * @returns The cleaned-up script as a string.
+ */
+export const generateCleanup = async (script: string): Promise<string> => {
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: `Instruction: "Clean up this script. Remove filler words (like 'um', 'uh', 'like'), redundancies, and false starts to improve clarity and pacing for a voiceover."\n\nScript:\n"${script}"`,
+            config: {
+                systemInstruction: "You are an expert script editor. Rewrite the provided script based on the user's instruction. Only return the rewritten text, without any introductory phrases, explanations, or markdown formatting.",
+            },
+        });
+        return response.text.trim();
+    } catch (error) {
+        console.error("Error cleaning up script:", error);
+        throw new Error("Failed to clean up script.");
+    }
+};

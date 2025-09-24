@@ -27,6 +27,7 @@
 *   **Project Creation Flow:** The project creation process begins with an AI-powered brainstorming session (`/setup`) to help users generate and refine ideas before moving to the main script editor. This prioritizes ideation upfront.
 *   **Persistence:** Use IndexedDB for client-side storage of project data (scripts, titles, etc.) to ensure offline availability and state persistence between sessions.
 *   **Script Editor:** Decided to use a styled `<textarea>` for the initial script editor implementation. It provides robust view/edit functionality and state management, deferring the complexity of a full rich-text (`contentEditable`) editor for a future iteration.
+*   **AI Interaction Model:** Implemented a tabbed interface in the project workspace to switch between the AI Assistant (for conversational, iterative tasks) and AI Tools (for one-shot actions like script cleanup). This provides dedicated spaces for different types of AI interaction.
 
 ## 4. Development Plan & Progress
 
@@ -45,6 +46,7 @@
 - [x] Implement FR-002: Connect Dashboard 'New Project' button to the `/setup` page to initiate the project creation flow. All dashboard and sidebar navigation is now functional.
 - [x] Implement FR-003: Add a transcript upload feature (`.txt`, `.srt`) to the `ProjectWorkspace` page for new projects. The in-project navigation is now functional.
 - [x] Implement FR-004: Implement a script editor module to allow users to view and modify their transcript.
+- [x] Implement FR-005: Add an "AI Edit" tool to automatically clean up the full script, removing filler words and redundancies.
 
 **Phase 3: Polish & Refinement**
 - [ ] Conduct a full accessibility audit (A11y).
@@ -58,6 +60,7 @@
 - [x] Integrate Gemini for script rewriting in the AI Assistant.
 - [x] Implement context-aware rewriting based on selected editor text.
 - [x] Integrate Gemini for image generation in the AI Assistant.
-- [x] Power the multi-step `ProcessingWorkflow` page with Gemini.
+- [x] Integrate Gemini for automated script cleanup.
+- [ ] Power the multi-step `ProcessingWorkflow` page with Gemini.
 - [ ] Power the `B-Roll Generator` page with the Gemini API.
 - [ ] Power the `Thumbnail Generator` page with the Gemini API.

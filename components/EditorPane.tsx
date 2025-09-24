@@ -4,10 +4,10 @@ import { CheckIcon } from './icons';
 interface EditorPaneProps {
   initialContent: string;
   onTextSelect: (text: string) => void;
-  onSave: (newContent: string) => Promise<void>;
+  onScriptUpdate: (newContent: string) => Promise<void>;
 }
 
-const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, onSave }) => {
+const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, onScriptUpdate }) => {
   const [content, setContent] = useState(initialContent);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
@@ -32,13 +32,11 @@ const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, o
   const handleSave = async () => {
     setSaveStatus('saving');
     try {
-      await onSave(content);
+      await onScriptUpdate(content);
       setSaveStatus('saved');
       setTimeout(() => {
         // Only revert to idle if it's still 'saved', to avoid race conditions
-        if (saveStatus === 'saved') {
-            setSaveStatus('idle');
-        }
+        setSaveStatus(prevStatus => prevStatus === 'saved' ? 'idle' : prevStatus);
       }, 2000);
     } catch (error) {
       console.error("Save failed:", error);
@@ -77,11 +75,11 @@ const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, o
         <span className="text-xs text-slate-500 px-2">{content.split(/\s+/).filter(Boolean).length} words</span>
         <button
           onClick={handleSave}
-          disabled={saveStatus === 'saving'}
+          disabled={saveStatus === 'saving' || initialContent === content}
           className={`px-3 py-1.5 text-xs font-medium rounded-md flex items-center transition-colors ${
             saveStatus === 'saved'
               ? 'bg-green-100 text-green-800'
-              : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-indigo-400'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed'
           }`}
         >
           {saveButtonContent()}

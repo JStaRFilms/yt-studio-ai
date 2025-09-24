@@ -3,8 +3,9 @@ import ProjectSidebar from '../components/ProjectSidebar';
 import ProjectWorkspaceHeader from '../components/ProjectWorkspaceHeader';
 import EditorPane from '../components/EditorPane';
 import AIChatPane from '../components/AIChatPane';
+import AIToolsPane from '../components/AIToolsPane';
 import ProjectMobileNav from '../components/ProjectMobileNav';
-import { UploadCloudIcon } from '../components/icons';
+import { UploadCloudIcon, ChatIcon, AIToolsIcon } from '../components/icons';
 import { getProject, updateProjectScript, Project } from '../utils/db';
 
 interface ProjectWorkspaceProps {
@@ -17,6 +18,7 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
   const [selectedText, setSelectedText] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState<'chat' | 'tools'>('chat');
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -37,7 +39,7 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
     fetchProject();
   }, [projectId]);
 
-  const handleScriptSave = async (newScript: string) => {
+  const handleScriptUpdate = async (newScript: string) => {
     if (project) {
         try {
             await updateProjectScript(project.id!, newScript);
@@ -132,10 +134,10 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
       <ProjectSidebar projectName={project.title} projectStep="Script Editing" />
       <ProjectMobileNav />
 
-      <main className="flex-1 md:ml-64 pb-24 md:pb-0 min-h-screen flex flex-col">
+      <main className="flex-1 md:ml-64 flex flex-col h-screen bg-slate-50">
         <ProjectWorkspaceHeader onUpload={handleHeaderUploadClick} />
         
-        <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full flex-1">
+        <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full flex-1 overflow-y-auto lg:overflow-hidden pb-24 md:pb-6">
           <div className="flex flex-col lg:flex-row gap-6 h-full">
             <div className="lg:w-3/5 flex flex-col">
               <div className="flex justify-between items-center mb-3">
@@ -146,7 +148,7 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
                   <EditorPane 
                     initialContent={project.script} 
                     onTextSelect={handleTextSelection}
-                    onSave={handleScriptSave}
+                    onScriptUpdate={handleScriptUpdate}
                   />
                 ) : (
                   TranscriptUploader
@@ -155,15 +157,38 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
             </div>
 
             <div className="lg:w-2/5 flex flex-col">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-medium text-slate-800">AI Assistant</h3>
-                 <span className="inline-flex items-center px-2 py-1 bg-indigo-600/10 text-indigo-600 text-xs rounded-full">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
-                  Active
-                </span>
-              </div>
-               <div className="flex-1 min-h-[500px] lg:min-h-0">
-                <AIChatPane selectedText={selectedText} />
+                <div className="flex border-b border-slate-200">
+                    <button
+                        onClick={() => setActiveTab('chat')}
+                        className={`flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                            activeTab === 'chat'
+                            ? 'border-indigo-600 text-indigo-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                        }`}
+                        aria-current={activeTab === 'chat'}
+                    >
+                        <ChatIcon className="h-5 w-5 mr-2" />
+                        AI Assistant
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('tools')}
+                        className={`flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                            activeTab === 'tools'
+                            ? 'border-indigo-600 text-indigo-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                        }`}
+                        aria-current={activeTab === 'tools'}
+                    >
+                        <AIToolsIcon className="h-5 w-5 mr-2" />
+                        AI Tools
+                    </button>
+                </div>
+               <div className="flex-1 min-h-[500px] lg:min-h-0 pt-3">
+                {activeTab === 'chat' ? (
+                  <AIChatPane selectedText={selectedText} />
+                ) : (
+                  <AIToolsPane script={project.script || ''} onApplyChanges={handleScriptUpdate} />
+                )}
               </div>
             </div>
           </div>
