@@ -11,25 +11,33 @@ const ReplaceIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 interface ContextualToolbarProps {
   editorSelection: { start: number; end: number };
-  onAction: () => void;
+  onReplace: () => void;
+  onAppend: () => void;
 }
 
-const ContextualToolbar: React.FC<ContextualToolbarProps> = ({ editorSelection, onAction }) => {
-  const isReplaceMode = editorSelection.start !== editorSelection.end;
-  const modeText = isReplaceMode ? "Replace selection" : "Append here";
-  const Icon = isReplaceMode ? ReplaceIcon : PlusIcon;
+const ContextualToolbar: React.FC<ContextualToolbarProps> = ({ editorSelection, onReplace, onAppend }) => {
+  const hasSelection = editorSelection.start !== editorSelection.end;
 
   return (
     <div
-      className="absolute top-0 left-1/2 -translate-x-1/2 z-10 bg-slate-800 text-white rounded-full shadow-lg px-3 py-1.5 flex items-center"
+      className="absolute top-0 left-1/2 -translate-x-1/2 z-10 bg-slate-800 text-white rounded-lg shadow-lg px-3 py-2 flex items-center space-x-2"
       role="toolbar"
     >
+      {hasSelection && (
+        <button
+          onClick={onReplace}
+          className="flex items-center text-xs font-medium hover:bg-slate-700 px-2 py-1 rounded"
+        >
+          <ReplaceIcon className="w-4 h-4 mr-1" />
+          Replace
+        </button>
+      )}
       <button
-        onClick={onAction}
-        className="flex items-center text-xs font-medium"
+        onClick={onAppend}
+        className="flex items-center text-xs font-medium hover:bg-slate-700 px-2 py-1 rounded"
       >
-        <Icon className="w-4 h-4 mr-1.5" />
-        {modeText}
+        <PlusIcon className="w-4 h-4 mr-1" />
+        Append
       </button>
     </div>
   );

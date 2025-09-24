@@ -73,19 +73,29 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
     }
   };
 
-  const handleInsertIntoScript = (textToInsert: string) => {
-    if (!project || !editorSelection) return;
+  const handleReplace = () => {
+    if (!project || !editorSelection || !sourceSelection) return;
 
     const { start, end } = editorSelection;
     const currentScript = project.script || '';
-    const isAppending = start === end;
-    
-    const newScript = isAppending
-      ? currentScript.slice(0, start) + textToInsert + currentScript.slice(start)
-      : currentScript.slice(0, start) + textToInsert + currentScript.slice(end);
-      
+    const newScript = currentScript.slice(0, start) + sourceSelection + currentScript.slice(end);
+
     handleScriptUpdate(newScript);
-    
+
+    // Reset selections after action
+    setSourceSelection('');
+    setEditorSelection(null);
+  };
+
+  const handleAppend = () => {
+    if (!project || !editorSelection || !sourceSelection) return;
+
+    const { start } = editorSelection;
+    const currentScript = project.script || '';
+    const newScript = currentScript.slice(0, start) + sourceSelection + currentScript.slice(start);
+
+    handleScriptUpdate(newScript);
+
     // Reset selections after action
     setSourceSelection('');
     setEditorSelection(null);
@@ -158,7 +168,8 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
                 {sourceSelection && editorFocused && editorSelection && (
                   <ContextualToolbar
                     editorSelection={editorSelection}
-                    onAction={() => handleInsertIntoScript(sourceSelection)}
+                    onReplace={handleReplace}
+                    onAppend={handleAppend}
                   />
                 )}
               </div>

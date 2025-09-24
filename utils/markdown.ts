@@ -7,6 +7,8 @@ declare global {
         DOMPurify: {
             sanitize: (html: string) => string;
         };
+        // Optional global provided by Turndown (loaded via CDN in index.html)
+        TurndownService?: new (...args: any[]) => { turndown: (html: string) => string };
     }
 }
 
@@ -31,4 +33,22 @@ export const parseAndSanitizeMarkdown = (markdown: string): string => {
     const sanitizedHtml = window.DOMPurify.sanitize(rawHtml);
     
     return sanitizedHtml;
+};
+
+/**
+ * Converts an HTML fragment to Markdown using Turndown if available.
+ * Falls back to plain text if Turndown is not present.
+ */
+export const htmlToMarkdown = (html: string): string => {
+    if (typeof window.TurndownService === 'undefined') {
+        // Fallback: strip tags and return text content
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        return (tmp.textContent || tmp.innerText || '').trim();
+    }
+    const turndown = new window.TurndownService({
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced',
+    });
+    return turndown.turndown(html);
 };

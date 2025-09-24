@@ -21,22 +21,17 @@
 *   **Tech Stack:** React, TypeScript, Tailwind CSS, Gemini API.
 
 ## 3. Key Decisions & User Preferences
-*(This section is a living log. We will update it with every significant decision we make.)*
 
 *   **Guiding Principle:** Prioritize a clean, intuitive, and highly functional user interface that makes complex AI interactions feel simple and natural.
 *   **Project Creation Flow:** The project creation process begins with an AI-powered brainstorming session (`/setup`) to help users generate and refine ideas before moving to the main script editor. This prioritizes ideation upfront.
 *   **Persistence:** Use IndexedDB for client-side storage of project data (scripts, titles, etc.) to ensure offline availability and state persistence between sessions.
 *   **Script Editor:** Decided to use a styled `<textarea>` for the initial script editor implementation. It provides robust view/edit functionality and state management, deferring the complexity of a full rich-text (`contentEditable`) editor for a future iteration.
-*   **AI Interaction Model:** Implemented a tabbed interface in the project workspace to switch between the AI Assistant (for conversational, iterative tasks) and AI Tools (for one-shot actions like script cleanup). This provides dedicated spaces for different types of AI interaction.
-*   **Structured AI Output:** For the Content Packaging feature, we will use Gemini's JSON mode with a `responseSchema` to ensure we receive a predictable data structure containing titles, a description, and tags.
-*   **Ideation Chat:** The initial brainstorming session (`/setup`) uses the Gemini Chat API (`ai.chats.create`) to maintain a stateful, context-aware conversation. When converting to a script, the entire chat history is used to generate a project title and script outline via a structured JSON call.
-*   **Contextual Text Transfer:** Implemented a contextual toolbar for replacing or appending text from the AI chat to the script editor. This provides a more fluid and intuitive editing experience than a simple "insert" button.
+  *   **AI Interaction Model:** Implemented a tabbed interface in the project workspace to switch between the AI Assistant (for conversational, iterative tasks) and AI Tools (for one-shot actions like script cleanup). This provides dedicated spaces for different types of AI interaction.
+  *   **Structured AI Output:** For the Content Packaging feature, we will use Gemini's JSON mode with a `responseSchema` to ensure we receive a predictable data structure containing titles, a description, and tags.
+  *   **Ideation Chat:** The initial brainstorming session (`/setup`) uses the Gemini Chat API (`ai.chats.create`) to maintain a stateful, context-aware conversation. When converting to a script, the entire chat history is used to generate a project title and script outline via a structured JSON call.
+  *   **Contextual Text Transfer:** Implemented a contextual toolbar with separate "Replace" and "Append" options for transferring text from the AI chat to the script editor. The toolbar appears when text is selected in the AI chat and the script editor gains focus, allowing users to either replace selected text or append at the cursor position. Text formatting (including newlines) is preserved during transfer. We convert selected chat HTML back into Markdown using Turndown before inserting into the editor.
 
-## 4. Development Plan & Progress
-
-**Project Status:** We are implementing the core AI features using the Gemini API.
-
-**Phase 1: Foundation & Setup**
+## Acceptance Criteria: Replace/Append from Chat
 - [x] Create `docs/GEMINI.md` as the command & control center.
 - [x] Implement IndexedDB for client-side project storage.
 
@@ -53,6 +48,29 @@
 - [x] Implement FR-006: Add a "Content Packaging" tool to generate titles, a description, and tags from the script.
 - [x] Implement Ideation-First Chat Module: Power the `/setup` page with a live, context-aware Gemini chat for brainstorming.
 - [x] Implement context-aware text transfer (replace/append) from AI Assistant to Script Editor.
+ - [x] Preserve formatting on transfer by converting selected chat HTML to Markdown (Turndown) before insertion.
+
+### Acceptance Criteria: Replace/Append from Chat
+
+- **Replace flow**
+  - Select text in the AI chat panel (right).
+  - Select target text in the Script Editor (left) — contextual toolbar shows Replace and Append.
+  - Clicking Replace replaces the selected editor text with the selected AI text.
+
+- **Append flow**
+  - Select text in the AI chat panel (right).
+  - Place the caret in the Script Editor without selecting text — contextual toolbar shows Append.
+  - Clicking Append inserts the AI text at the caret position.
+
+- **Formatting preservation**
+  - Bold, italics, lists, code blocks, and line breaks are preserved. The AI chat selection is captured as HTML and converted back to Markdown with Turndown before being inserted into the textarea-based editor. In view mode, Markdown is rendered via `parseAndSanitizeMarkdown()`.
+
+- **UI visibility & state**
+  - The contextual toolbar only appears when there is a valid chat selection, the editor is focused, and an editor selection/caret exists.
+  - After Replace or Append, the source selection and editor selection are cleared and the toolbar hides.
+
+- **Fallback behavior**
+  - If Turndown is not loaded, the app falls back to inserting plain text so workflows remain functional.
 
 **Phase 3: Polish & Refinement**
 - [ ] Conduct a full accessibility audit (A11y).

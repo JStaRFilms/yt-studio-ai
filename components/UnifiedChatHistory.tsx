@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ChatMessage } from '../utils/db';
 import AIMessage from './AIMessage';
 import UserMessage from './UserMessage';
 import HistoryBookmark from './HistoryBookmark';
+import { htmlToMarkdown } from '../utils/markdown';
 
 interface UnifiedChatHistoryProps {
   history: ChatMessage[];
@@ -15,14 +16,27 @@ const UnifiedChatHistory: React.FC<UnifiedChatHistoryProps> = ({ history, curren
   const renderedElements: React.ReactElement[] = [];
   let lastContext = currentContext;
   let historySlice: ChatMessage[] = [];
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseUp = () => {
-    if (onTextSelect) {
-      const selection = window.getSelection()?.toString().trim() ?? '';
-      if (selection) {
-        onTextSelect(selection);
-      }
-    }
+    if (!onTextSelect) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+
+    // Ensure selection occurs within this chat container
+    const container = containerRef.current;
+    const anchorNode = sel.anchorNode;
+    const focusNode = sel.focusNode;
+    const isWithin = !!(container && anchorNode && focusNode && container.contains(anchorNode) && container.contains(focusNode));
+    if (!isWithin) return;
+
+    const range = sel.getRangeAt(0).cloneRange();
+    const tmp = document.createElement('div');
+    tmp.appendChild(range.cloneContents());
+    const html = tmp.innerHTML.trim();
+
+    const markdown = html ? htmlToMarkdown(html) : sel.toString().trim();
+    if (markdown) onTextSelect(markdown);
   };
 
   history.forEach((message, index) => {
@@ -87,7 +101,7 @@ const UnifiedChatHistory: React.FC<UnifiedChatHistoryProps> = ({ history, curren
   }
 
   return (
-    <div className="space-y-6" onMouseUp={handleMouseUp}>
+    <div ref={containerRef} className="space-y-6" onMouseUp={handleMouseUp}>
       {renderedElements}
       {isLoading && (
         <div className="p-4 bg-slate-100 rounded-lg max-w-prose">

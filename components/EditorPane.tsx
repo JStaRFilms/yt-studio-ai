@@ -37,6 +37,11 @@ const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, o
     onSelectionChange({ start: target.selectionStart, end: target.selectionEnd });
   };
 
+  const handleMouseUp = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    const target = e.target as HTMLTextAreaElement;
+    onSelectionChange({ start: target.selectionStart, end: target.selectionEnd });
+  };
+
   const handleSave = async () => {
     setSaveStatus('saving');
     try {
@@ -113,6 +118,7 @@ const EditorPane: React.FC<EditorPaneProps> = ({ initialContent, onTextSelect, o
           value={content}
           onChange={handleChange}
           onSelect={handleSelect}
+          onMouseUp={handleMouseUp}
           onFocus={() => onFocusChange(true)}
           onBlur={handleBlur}
           placeholder="Your script will appear here..."
