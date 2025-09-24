@@ -1,5 +1,5 @@
 import React from 'react';
-import { HomeIcon, FileIcon, UserIcon } from './icons';
+import { HomeIcon, PlusIcon } from './icons';
 
 const Sidebar: React.FC = () => {
   return (
@@ -12,25 +12,20 @@ const Sidebar: React.FC = () => {
             <h1 className="ml-2 text-lg font-semibold text-slate-800">ScriptFlow</h1>
         </div>
         <nav>
-          <ul>
+          <ul className="space-y-1">
             <li>
-              <a href="#" className="flex items-center px-4 py-2 text-indigo-600 bg-indigo-50 rounded-lg">
+              <a href="/" className="flex items-center px-4 py-2 text-indigo-600 bg-indigo-50 rounded-lg font-medium">
                 <HomeIcon className="h-5 w-5 mr-3" />
-                Dashboard
-              </a>
-            </li>
-            <li>
-              <a href="#" className="flex items-center px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
-                <FileIcon className="h-5 w-5 mr-3" />
                 Projects
               </a>
             </li>
             <li>
-              <a href="#" className="flex items-center px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
-                <UserIcon className="h-5 w-5 mr-3" />
-                Profile
+              <a href="/setup" className="flex items-center px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
+                <PlusIcon className="h-5 w-5 mr-3" />
+                New Project
               </a>
             </li>
+            {/* Future links can be added here, e.g., Profile */}
           </ul>
         </nav>
       </div>

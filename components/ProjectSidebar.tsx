@@ -17,9 +17,9 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ projectName, projectSte
       </div>
       
       <div className="mb-6">
-        <a href="#" className="flex items-center px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
+        <a href="/" className="flex items-center px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">
           <BackIcon className="h-5 w-5 mr-3" />
-          Back to Dashboard
+          Back to Projects
         </a>
       </div>
       

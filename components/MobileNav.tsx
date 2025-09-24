@@ -1,5 +1,5 @@
 import React from 'react';
-import { HomeIcon, FileIcon, UserIcon } from './icons';
+import { HomeIcon, PlusIcon } from './icons';
 
 interface MobileNavProps {
   onClose: () => void;
@@ -7,8 +7,8 @@ interface MobileNavProps {
 
 const MobileNav: React.FC<MobileNavProps> = ({ onClose }) => {
   return (
-    <div className="fixed inset-0 z-40 flex md:hidden">
-      <div className="fixed inset-0 bg-black bg-opacity-25" onClick={onClose}></div>
+    <div className="fixed inset-0 z-40 flex md:hidden" role="dialog" aria-modal="true">
+      <div className="fixed inset-0 bg-black bg-opacity-25" aria-hidden="true" onClick={onClose}></div>
       <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
         <div className="absolute top-0 right-0 -mr-12 pt-2">
           <button
@@ -30,22 +30,19 @@ const MobileNav: React.FC<MobileNavProps> = ({ onClose }) => {
              <h1 className="ml-2 text-lg font-semibold text-slate-800">ScriptFlow</h1>
           </div>
           <nav className="mt-5 px-2 space-y-1">
-            <a href="#" className="bg-indigo-50 text-indigo-600 group flex items-center px-2 py-2 text-base font-medium rounded-md">
+            <a href="/" className="bg-indigo-50 text-indigo-600 group flex items-center px-2 py-2 text-base font-medium rounded-md">
               <HomeIcon className="mr-4 flex-shrink-0 h-6 w-6" />
-              Dashboard
-            </a>
-            <a href="#" className="text-slate-600 hover:bg-slate-50 hover:text-slate-900 group flex items-center px-2 py-2 text-base font-medium rounded-md">
-              <FileIcon className="mr-4 flex-shrink-0 h-6 w-6" />
               Projects
             </a>
-            <a href="#" className="text-slate-600 hover:bg-slate-50 hover:text-slate-900 group flex items-center px-2 py-2 text-base font-medium rounded-md">
-              <UserIcon className="mr-4 flex-shrink-0 h-6 w-6" />
-              Profile
+            <a href="/setup" className="text-slate-600 hover:bg-slate-50 hover:text-slate-900 group flex items-center px-2 py-2 text-base font-medium rounded-md">
+              <PlusIcon className="mr-4 flex-shrink-0 h-6 w-6" />
+              New Project
             </a>
+            {/* A profile link could be added later */}
           </nav>
         </div>
       </div>
-      <div className="flex-shrink-0 w-14"></div>
+      <div className="flex-shrink-0 w-14" aria-hidden="true"></div>
     </div>
   );
 };

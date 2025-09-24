@@ -1,32 +1,30 @@
-import React, { useState, useEffect, useCallback } from 'react';
-
-const initialParagraphs = [
-  "Today we're diving into the new iPhone 15 Pro Max. I've been testing it for two weeks now, and I have to say... it's incredible. The titanium frame makes it so much lighter than the previous model, which is a huge improvement.",
-  "The camera system is where this phone really shines. The new 5x optical zoom is game-changing for mobile photography. I took some shots at the park yesterday, and the detail was astonishing. You can see individual leaves on trees from 50 feet away.",
-  "Now let's talk about performance. The A17 Pro chip is... well, it's fast. Like, really fast. I ran some benchmarks against the 14 Pro, and the difference is noticeable even in everyday tasks. Scrolling is smoother, apps launch quicker, and multitasking is a breeze.",
-  "One thing I wasn't expecting was the battery life. Apple claims 20 hours of video playback, but in real-world use, I'm getting about 15 hours with mixed usage. That's still better than most Android flagships, but not quite as good as I hoped.",
-  "The USB-C port is finally here! It's about time. File transfers are much faster now, and I don't need to carry multiple cables anymore. However, the charging speed still lags behind Android competitors. You'll need the 27W adapter for full speed, which costs extra."
-];
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 interface EditorPaneProps {
+  content: string;
   onTextSelect: (text: string) => void;
 }
 
-const EditorPane: React.FC<EditorPaneProps> = ({ onTextSelect }) => {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(2);
+const EditorPane: React.FC<EditorPaneProps> = ({ content, onTextSelect }) => {
+  const paragraphs = useMemo(() => content.split('\n').filter(p => p.trim() !== ''), [content]);
+  
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const handleSelect = useCallback((index: number) => {
     setSelectedIndex(index);
   }, []);
   
   useEffect(() => {
-    if (selectedIndex !== null) {
-      onTextSelect(initialParagraphs[selectedIndex]);
+    if (selectedIndex !== null && paragraphs[selectedIndex]) {
+      onTextSelect(paragraphs[selectedIndex]);
     } else {
       onTextSelect('');
     }
-  }, [selectedIndex, onTextSelect]);
+  }, [selectedIndex, onTextSelect, paragraphs]);
 
+  useEffect(() => {
+    setSelectedIndex(null);
+  }, [content]);
 
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden h-full flex flex-col">
@@ -34,11 +32,12 @@ const EditorPane: React.FC<EditorPaneProps> = ({ onTextSelect }) => {
         <div className="flex space-x-1">
           {/* Editor tools can be added here */}
         </div>
-        <div className="text-xs text-slate-500">1,248 words • 12 min read</div>
+        <div className="text-xs text-slate-500">{`${content.split(' ').length} words`}</div>
       </div>
       <div className="p-4 overflow-y-auto flex-1" style={{ minHeight: '400px' }}>
         <div className="prose max-w-none">
-          {initialParagraphs.map((p, index) => (
+          {paragraphs.length > 0 ? (
+            paragraphs.map((p, index) => (
              <p 
               key={index} 
               onClick={() => handleSelect(index)}
@@ -46,7 +45,10 @@ const EditorPane: React.FC<EditorPaneProps> = ({ onTextSelect }) => {
              >
               {p}
             </p>
-          ))}
+            ))
+          ) : (
+            <p className="text-slate-500 italic">No content to display.</p>
+          )}
         </div>
       </div>
     </div>

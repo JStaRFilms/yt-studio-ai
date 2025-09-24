@@ -25,6 +25,7 @@
 
 *   **Guiding Principle:** Prioritize a clean, intuitive, and highly functional user interface that makes complex AI interactions feel simple and natural.
 *   **Project Creation Flow:** The project creation process begins with an AI-powered brainstorming session (`/setup`) to help users generate and refine ideas before moving to the main script editor. This prioritizes ideation upfront.
+*   **Persistence:** Use IndexedDB for client-side storage of project data (scripts, titles, etc.) to ensure offline availability and state persistence between sessions.
 
 ## 4. Development Plan & Progress
 
@@ -32,6 +33,7 @@
 
 **Phase 1: Foundation & Setup**
 - [x] Create `docs/GEMINI.md` as the command & control center.
+- [x] Implement IndexedDB for client-side project storage.
 
 **Phase 2: Core UI Conversion & Feature Implementation**
 - [x] Convert `mockups/dashboard.html` to the `Dashboard` page.
@@ -39,11 +41,12 @@
 - [x] Convert `mockups/project-id.html` to the `ProjectWorkspace` page.
 - [x] Convert `mockups/project-id-v2.html` to enhance the `ProjectWorkspace` with an AI chat assistant.
 - [x] Convert `mockups/project-id-b-roll.html`, `project-id-thumbnails.html`, and `ProcessingWorkflowpage.html`.
-- [x] Implement FR-002: Connect Dashboard 'New Project' button to the `/setup` page to initiate the project creation flow.
+- [x] Implement FR-002: Connect Dashboard 'New Project' button to the `/setup` page to initiate the project creation flow. All dashboard and sidebar navigation is now functional.
+- [x] Implement FR-003: Add a transcript upload feature (`.txt`, `.srt`) to the `ProjectWorkspace` page for new projects. The in-project navigation is now functional.
 
 **Phase 3: Polish & Refinement**
-- [x] Conduct a full accessibility audit (A11y).
-- [x] Optimize for performance (Lighthouse score > 90).
+- [ ] Conduct a full accessibility audit (A11y).
+- [ ] Optimize for performance (Lighthouse score > 90).
 
 **Phase 4: Final Steps**
 - [ ] Write comprehensive tests.

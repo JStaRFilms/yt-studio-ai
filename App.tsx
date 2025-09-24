@@ -12,9 +12,24 @@ const App: React.FC = () => {
   if (path.startsWith('/setup')) {
     return <ProjectSetup />;
   }
-  if (path.startsWith('/project') || path.startsWith('/workspace')) {
-    return <ProjectWorkspace />;
+
+  const projectMatch = path.match(/^\/project\/(\d+)/);
+  if (projectMatch) {
+    const projectId = parseInt(projectMatch[1], 10);
+    return <ProjectWorkspace projectId={projectId} />;
   }
+  
+  // Legacy /workspace URLs redirect to /project/
+  if (path.startsWith('/workspace')) {
+      const idMatch = path.match(/^\/workspace\/(\d+)/);
+      if (idMatch) {
+          window.location.pathname = `/project/${idMatch[1]}`;
+      } else {
+          window.location.pathname = '/';
+      }
+      return null; // Render nothing while redirecting
+  }
+
   if (path.startsWith('/workflow')) {
     return <ProcessingWorkflow />;
   }

@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { MenuIcon, SearchIcon, UserIcon } from './icons';
 import MobileNav from './MobileNav';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  title: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ title }) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
@@ -12,10 +16,11 @@ const Header: React.FC = () => {
           <button
             className="md:hidden mr-4 text-slate-500 hover:text-slate-700"
             onClick={() => setMobileNavOpen(true)}
+            aria-label="Open navigation menu"
           >
             <MenuIcon className="h-6 w-6" />
           </button>
-          <h1 className="text-xl font-semibold text-slate-800">Dashboard</h1>
+          <h1 className="text-xl font-semibold text-slate-800">{title}</h1>
         </div>
         <div className="flex items-center space-x-4">
           <div className="hidden md:block relative">

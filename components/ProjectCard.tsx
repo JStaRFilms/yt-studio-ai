@@ -1,30 +1,39 @@
 import React from 'react';
+import { Project } from '../utils/db';
 
 interface ProjectCardProps {
-  title: string;
-  lastEdited: string;
-  status: 'Draft' | 'In Progress' | 'Complete';
+  project: Project;
 }
 
-const statusStyles = {
-  Draft: 'bg-slate-100 text-slate-800',
-  'In Progress': 'bg-blue-100 text-blue-800',
-  Complete: 'bg-green-100 text-green-800',
+const timeAgo = (date: Date): string => {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " years ago";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " months ago";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " days ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + " hours ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + " minutes ago";
+    return "just now";
 };
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ title, lastEdited, status }) => {
+
+const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition">
+    <a href={`/project/${project.id}`} className="block bg-white border border-slate-200 rounded-lg p-4 flex flex-col justify-between hover:shadow-md hover:border-indigo-500 transition group">
       <div>
-        <h3 className="font-medium text-slate-800 truncate">{title}</h3>
-        <p className="text-sm text-slate-500 mt-1">Last edited {lastEdited}</p>
+        <h3 className="font-medium text-slate-800 truncate group-hover:text-indigo-600">{project.title}</h3>
+        <p className="text-sm text-slate-500 mt-2 line-clamp-2">{project.script ? project.script.substring(0, 100) + '...' : 'No script yet.'}</p>
       </div>
       <div className="mt-4">
-        <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusStyles[status]}`}>
-          {status}
+        <span className="text-xs text-slate-400">
+          Edited {timeAgo(new Date(project.updatedAt))}
         </span>
       </div>
-    </div>
+    </a>
   );
 };
 

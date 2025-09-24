@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ProjectSidebar from '../components/ProjectSidebar';
 import { CheckIcon } from '../components/icons';
+import { addProject } from '../utils/db';
 
 const SuggestionPill: React.FC<{ text: string, suggestion: string, onSelect: (suggestion: string) => void }> = ({ text, suggestion, onSelect }) => (
     <button
@@ -91,11 +92,19 @@ const ProjectSetup: React.FC = () => {
         }, 1000);
     };
     
-    const handleConvertToScript = () => {
+    const handleConvertToScript = async () => {
         setIsConverting(true);
-        setTimeout(() => {
-            window.location.href = '/workspace';
-        }, 1500);
+        try {
+            const newProjectId = await addProject({
+                title: 'Untitled Project',
+                script: 'This is a new project. Upload a transcript or start writing!',
+            });
+            window.location.href = `/project/${newProjectId}`;
+        } catch (error) {
+            console.error("Failed to create project:", error);
+            alert("Could not create a new project. Please try again.");
+            setIsConverting(false);
+        }
     };
 
     const handleSuggestionSelect = (suggestion: string) => {
