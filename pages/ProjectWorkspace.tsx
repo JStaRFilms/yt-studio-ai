@@ -6,7 +6,8 @@ import AIChatPane from '../components/AIChatPane';
 import AIToolsPane from '../components/AIToolsPane';
 import ProjectMobileNav from '../components/ProjectMobileNav';
 import { UploadCloudIcon, ChatIcon, AIToolsIcon } from '../components/icons';
-import { getProject, updateProjectScript, Project } from '../utils/db';
+import { getProject, updateProject, Project } from '../utils/db';
+import { Content } from '@google/genai';
 
 interface ProjectWorkspaceProps {
     projectId: number;
@@ -42,14 +43,38 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
   const handleScriptUpdate = async (newScript: string) => {
     if (project) {
         try {
-            await updateProjectScript(project.id!, newScript);
+            await updateProject(project.id!, { script: newScript });
             setProject(prev => prev ? { ...prev, script: newScript, updatedAt: new Date() } : null);
         } catch (error) {
             console.error("Failed to save script:", error);
-            // Re-throw to allow the child component to handle UI feedback
             throw error;
         }
     }
+  };
+
+  // FIX: Property 'brainstorm' was missing when updating chatHistories. Preserving existing brainstorm history and ensuring state update is safe.
+  const handleAssistantHistoryUpdate = async (newHistory: Content[]) => {
+      if (project) {
+          try {
+              await updateProject(project.id!, { 
+                  chatHistories: { 
+                      brainstorm: project.chatHistories?.brainstorm || [],
+                      assistant: newHistory 
+                  } 
+              });
+              setProject(prev => prev ? { 
+                  ...prev, 
+                  chatHistories: { 
+                      brainstorm: prev.chatHistories?.brainstorm || [],
+                      assistant: newHistory 
+                  },
+                  updatedAt: new Date() 
+              } : null);
+          } catch (error) {
+              console.error("Failed to save assistant chat history:", error);
+              throw error;
+          }
+      }
   };
 
   const processFile = async (file: File) => {
@@ -57,13 +82,7 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const content = e.target?.result as string;
-        try {
-          await updateProjectScript(projectId, content);
-          setProject(prev => prev ? { ...prev, script: content, updatedAt: new Date() } : null);
-        } catch (error) {
-          console.error("Failed to save script:", error);
-          alert("Error saving script. Please try again.");
-        }
+        await handleScriptUpdate(content);
       };
       reader.readAsText(file);
     } else {
@@ -71,39 +90,26 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
     }
   };
 
-  const handleHeaderUploadClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleHeaderUploadClick = () => fileInputRef.current?.click();
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      processFile(files[0]);
-    }
+    if (files && files.length > 0) processFile(files[0]);
   };
 
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); e.stopPropagation(); setIsDragging(true);
-  };
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); e.stopPropagation(); setIsDragging(false);
-  };
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); e.stopPropagation();
-  };
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); };
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault(); e.stopPropagation(); setIsDragging(false);
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      processFile(files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0]);
     }
   };
   
   const handleUploaderClick = () => fileInputRef.current?.click();
 
-  const handleTextSelection = useCallback((text: string) => {
-    setSelectedText(text);
-  }, []);
+  const handleTextSelection = useCallback((text: string) => setSelectedText(text), []);
 
   const TranscriptUploader = (
     <div
@@ -120,18 +126,18 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
     </div>
   );
   
-  if (loading) {
-    return <div className="flex h-screen w-full items-center justify-center">Loading project...</div>;
-  }
-  
-  if (!project) {
-    return <div className="flex h-screen w-full items-center justify-center">Project not found.</div>;
-  }
+  if (loading) return <div className="flex h-screen w-full items-center justify-center">Loading project...</div>;
+  if (!project) return <div className="flex h-screen w-full items-center justify-center">Project not found.</div>;
 
   return (
     <div className="flex">
       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".txt,.srt" />
-      <ProjectSidebar projectName={project.title} projectStep="Script Editing" />
+      <ProjectSidebar 
+        projectName={project.title} 
+        projectStep="Script Editing"
+        projectId={project.id!}
+        activePage="editor"
+       />
       <ProjectMobileNav />
 
       <main className="flex-1 md:ml-64 flex flex-col h-screen bg-slate-50">
@@ -150,42 +156,27 @@ const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({ projectId }) => {
                     onTextSelect={handleTextSelection}
                     onScriptUpdate={handleScriptUpdate}
                   />
-                ) : (
-                  TranscriptUploader
-                )}
+                ) : TranscriptUploader}
               </div>
             </div>
 
             <div className="lg:w-2/5 flex flex-col">
                 <div className="flex border-b border-slate-200">
-                    <button
-                        onClick={() => setActiveTab('chat')}
-                        className={`flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                            activeTab === 'chat'
-                            ? 'border-indigo-600 text-indigo-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                        }`}
-                        aria-current={activeTab === 'chat'}
-                    >
-                        <ChatIcon className="h-5 w-5 mr-2" />
-                        AI Assistant
+                    <button onClick={() => setActiveTab('chat')} className={`flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'chat' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`} aria-current={activeTab === 'chat'}>
+                        <ChatIcon className="h-5 w-5 mr-2" /> AI Assistant
                     </button>
-                    <button
-                        onClick={() => setActiveTab('tools')}
-                        className={`flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                            activeTab === 'tools'
-                            ? 'border-indigo-600 text-indigo-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                        }`}
-                        aria-current={activeTab === 'tools'}
-                    >
-                        <AIToolsIcon className="h-5 w-5 mr-2" />
-                        AI Tools
+                    <button onClick={() => setActiveTab('tools')} className={`flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'tools' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`} aria-current={activeTab === 'tools'}>
+                        <AIToolsIcon className="h-5 w-5 mr-2" /> AI Tools
                     </button>
                 </div>
                <div className="flex-1 min-h-[500px] lg:min-h-0 pt-3">
                 {activeTab === 'chat' ? (
-                  <AIChatPane selectedText={selectedText} />
+                  <AIChatPane 
+                    selectedText={selectedText}
+                    assistantHistory={project.chatHistories?.assistant || []}
+                    brainstormHistory={project.chatHistories?.brainstorm || []}
+                    onAssistantHistoryUpdate={handleAssistantHistoryUpdate}
+                  />
                 ) : (
                   <AIToolsPane script={project.script || ''} onApplyChanges={handleScriptUpdate} />
                 )}

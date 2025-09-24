@@ -21,12 +21,20 @@ export interface ProjectData {
 }
 
 /**
- * Starts a new, stateful chat session for brainstorming.
+ * Starts a new, stateful chat session.
+ * @param history The primary chat history for the session.
+ * @param secondaryHistory Optional secondary history to provide more context (e.g., brainstorm for assistant).
  * @returns A Chat instance.
  */
-export const startChatSession = (): Chat => {
+export const startChatSession = (history?: Content[], secondaryHistory?: Content[]): Chat => {
+    const fullHistory = [
+        ...(secondaryHistory || []),
+        ...(history || []),
+    ];
+    
     return ai.chats.create({
         model: 'gemini-2.5-flash',
+        history: fullHistory,
         config: {
             systemInstruction: "You are a creative partner and brainstorming assistant for a YouTube content creator. Your goal is to help them brainstorm and outline a video script. Be encouraging, ask clarifying questions, and provide structured ideas like lists and outlines. Keep your responses concise and helpful.",
         },

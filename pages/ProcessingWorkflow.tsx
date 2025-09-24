@@ -18,7 +18,8 @@ const ProcessingWorkflow: React.FC = () => {
     
     return (
         <div className="flex bg-slate-50 min-h-screen">
-            <ProjectSidebar projectName="Tech Review Script" projectStep="Processing Workflow" />
+            {/* FIX: Add missing projectId and activePage props to ProjectSidebar */}
+            <ProjectSidebar projectName="Tech Review Script" projectStep="Processing Workflow" projectId={1} activePage="editor" />
             <main className="flex-1 md:ml-64 pb-24 md:pb-0">
                 <PageHeader
                     title="Processing Workflow"

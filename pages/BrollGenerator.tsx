@@ -19,7 +19,8 @@ const BrollGenerator: React.FC = () => {
 
     return (
         <div className="flex">
-            <ProjectSidebar projectName="Tech Review Script" projectStep="B-Roll Generation" />
+            {/* FIX: Add missing projectId and activePage props to ProjectSidebar */}
+            <ProjectSidebar projectName="Tech Review Script" projectStep="B-Roll Generation" projectId={1} activePage="editor" />
             <main className="flex-1 md:ml-64 pb-24 md:pb-0">
                 <PageHeader
                     title="B-Roll Generator"

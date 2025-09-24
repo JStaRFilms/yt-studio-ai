@@ -1,13 +1,19 @@
+import { Content } from '@google/genai';
+
 export interface Project {
   id?: number;
   title: string;
   script: string;
   createdAt: Date;
   updatedAt: Date;
+  chatHistories?: {
+    brainstorm: Content[];
+    assistant: Content[];
+  };
 }
 
 const DB_NAME = 'ScriptFlowDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Incremented version for schema change
 const STORE_NAME = 'projects';
 
 let db: IDBDatabase;
@@ -36,6 +42,7 @@ export const initDB = (): Promise<IDBDatabase> => {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
         store.createIndex('updatedAt', 'updatedAt', { unique: false });
       }
+      // Schema migration logic can be added here if needed for future versions.
     };
   });
 };
@@ -46,7 +53,12 @@ export const addProject = async (project: Omit<Project, 'id' | 'createdAt' | 'up
     const transaction = db.transaction(STORE_NAME, 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     const newProject: Omit<Project, 'id'> = {
-        ...project,
+        title: project.title,
+        script: project.script,
+        chatHistories: {
+          brainstorm: project.chatHistories?.brainstorm || [],
+          assistant: [],
+        },
         createdAt: new Date(),
         updatedAt: new Date(),
     };
@@ -101,23 +113,32 @@ export const getProject = async (id: number): Promise<Project | undefined> => {
     });
 };
 
-export const updateProjectScript = async (id: number, script: string): Promise<void> => {
+export const updateProject = async (id: number, updates: Partial<Omit<Project, 'id' | 'createdAt'>>): Promise<void> => {
     const db = await initDB();
     const transaction = db.transaction(STORE_NAME, 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     const getRequest = store.get(id);
 
     return new Promise<void>((resolve, reject) => {
-        getRequest.onerror = () => {
-             reject(getRequest.error);
-        };
+        getRequest.onerror = () => reject(getRequest.error);
+        
         getRequest.onsuccess = () => {
-            const project = getRequest.result;
+            const project = getRequest.result as Project | undefined;
             if (project) {
-                project.script = script;
-                project.updatedAt = new Date();
+                // Deep merge chatHistories
+                const newChatHistories = {
+                    brainstorm: updates.chatHistories?.brainstorm ?? project.chatHistories?.brainstorm ?? [],
+                    assistant: updates.chatHistories?.assistant ?? project.chatHistories?.assistant ?? [],
+                };
 
-                const putRequest = store.put(project);
+                const updatedProject = { 
+                    ...project, 
+                    ...updates, 
+                    chatHistories: newChatHistories,
+                    updatedAt: new Date() 
+                };
+
+                const putRequest = store.put(updatedProject);
                 putRequest.onsuccess = () => resolve();
                 putRequest.onerror = () => reject(putRequest.error);
             } else {

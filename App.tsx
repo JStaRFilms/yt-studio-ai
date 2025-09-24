@@ -9,6 +9,12 @@ import ThumbnailGenerator from './pages/ThumbnailGenerator';
 const App: React.FC = () => {
   const path = window.location.pathname;
 
+  const projectSetupMatch = path.match(/^\/project\/(\d+)\/setup$/);
+  if (projectSetupMatch) {
+    const projectId = parseInt(projectSetupMatch[1], 10);
+    return <ProjectSetup projectId={projectId} />;
+  }
+
   if (path.startsWith('/setup')) {
     return <ProjectSetup />;
   }

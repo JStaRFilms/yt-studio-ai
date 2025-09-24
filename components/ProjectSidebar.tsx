@@ -1,12 +1,24 @@
 import React from 'react';
-import { BackIcon } from './icons';
+import { BackIcon, ChatIcon, EditorIcon } from './icons';
 
 interface ProjectSidebarProps {
     projectName: string;
     projectStep: string;
+    projectId: number;
+    activePage: 'editor' | 'brainstorm';
 }
 
-const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ projectName, projectStep }) => {
+const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ projectName, projectStep, projectId, activePage }) => {
+  const brainstormClasses = "flex items-center px-4 py-2 rounded-lg";
+  const editorClasses = "flex items-center px-4 py-2 rounded-lg";
+
+  const getLinkClasses = (page: 'editor' | 'brainstorm') => {
+    if (page === activePage) {
+      return "bg-indigo-600/10 text-indigo-600 font-medium";
+    }
+    return "text-slate-600 hover:bg-slate-50";
+  };
+
   return (
     <aside className="hidden md:block w-64 bg-white border-r border-slate-200 min-h-screen p-4 fixed top-0 left-0">
       <div className="flex items-center mb-8">
@@ -25,10 +37,20 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ projectName, projectSte
       
       <div className="mb-4">
         <h2 className="px-4 text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Project</h2>
-        <div className="bg-indigo-600/10 border border-indigo-600/20 rounded-lg p-3 mx-2">
+        <div className="bg-indigo-600/10 border border-indigo-600/20 rounded-lg p-3 mx-2 mb-4">
           <h3 className="font-medium text-slate-800 truncate">{projectName}</h3>
           <p className="text-xs text-slate-500 mt-1">{projectStep}</p>
         </div>
+        <nav className="space-y-1 px-2">
+            <a href={`/project/${projectId}/setup`} className={`${brainstormClasses} ${getLinkClasses('brainstorm')}`}>
+                <ChatIcon className="h-5 w-5 mr-3" />
+                Brainstorm
+            </a>
+            <a href={`/project/${projectId}`} className={`${editorClasses} ${getLinkClasses('editor')}`}>
+                <EditorIcon className="h-5 w-5 mr-3" />
+                Editor
+            </a>
+        </nav>
       </div>
     </aside>
   );
